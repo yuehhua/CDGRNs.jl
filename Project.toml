@@ -1,0 +1,18 @@
+name = "GRN"
+uuid = "413703f9-9391-4478-8b46-87163f83d37b"
+authors = ["Yueh-Hua Tu <a504082002@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+GeometricFlux = "7e08b658-56d3-11e9-2997-919d5b31e4ea"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+
+[compat]
+julia = "1.5"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

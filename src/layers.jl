@@ -1,14 +1,3 @@
-using LinearAlgebra
-using Flux
-using Flux: glorot_uniform, mse
-using Flux: @functor
-using GeometricFlux
-using GraphSignals
-
-d = 10
-numGene = 20
-numCell = 30
-
 ## Protein Concentration Layer
 
 struct Concentration{T<:AbstractMatrix,S<:AbstractVector}
@@ -82,21 +71,3 @@ function (l::GeneRegulatory)(X::AbstractMatrix)
 end
 
 (l::GeneRegulatory)(adj, X::AbstractMatrix) = propagate(l, adj, X)
-
-
-A = adjacency_list(rand([0,1], numGene, numGene))
-train_X = rand(Float32, d, numGene, numCell)
-
-model = Chain(Concentration(d=>numGene),
-              GeneRegulatory(A, numGene))
-
-loss(X, y) = mse(model(X), y)
-
-# test model
-@show Y = model(train_X)
-
-# test loss
-# @show loss(train_X, train_y)
-
-# test gradient
-# @show gradient(X -> loss(X, train_y), train_X)
