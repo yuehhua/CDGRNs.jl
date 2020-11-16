@@ -2,10 +2,14 @@ using GRN
 using GeometricFlux
 using Flux
 using GraphSignals
+using DataFrames
+using CSV
+using SnowyOwl
 using Test
 
 tests = [
-    "grn"
+    "grn",
+    "data"
 ]
 
 @testset "GRN" begin
