@@ -14,8 +14,8 @@ end
 @functor Concentration
 
 function (l::Concentration)(X::AbstractArray)
-    r = [softplus.(view(l.W,:,i)' * view(X,:,i,:) .+ view(l.b,i)) for i = 1:size(l.W,2)]
-    vcat(r...)
+    WX = reshape(sum(l.W .* X, dims=1), size(X,2), size(X,3))
+    softplus.(WX .+ l.b)
 end
 
 
@@ -54,7 +54,7 @@ end
 
 @inline function apply_batch_message(l::GeneRegulatory, i, js, X::AbstractMatrix)
     h = σ.(view(l.W,js) .* log.(view(X,js,:)) .+ view(l.b,js))
-    m = [view(h,:,j)'*view(l.R,js,js)*view(h,:,j) for j = 1:size(h,2)]
+    m = [view(h,:,j)'*view(l.R,js,js)*view(h,:,j) for j = 1:size(h,2)] # BUG
     m'
 end
 
@@ -62,7 +62,7 @@ propagate(l::GeneRegulatory, adj, X::AbstractMatrix) = update_batch_edge(l, adj,
 
 function (l::GeneRegulatory)(fg::FeaturedGraph)
     X = propagate(l, adjacency_list(fg), node_feature(fg))
-    FeaturedGraph(graph(fg), X)
+    FeaturedGraph(graph(fg), nf=X)
 end
 
 function (l::GeneRegulatory)(X::AbstractMatrix)

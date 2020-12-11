@@ -5,10 +5,11 @@ using GraphSignals
 using DataFrames
 using CSV
 using SnowyOwl
+using Zygote
 using Test
 
 tests = [
-    "grn",
+    "layers",
     "data"
 ]
 
