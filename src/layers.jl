@@ -22,11 +22,12 @@ end
 
 ## Gene Regulatory Layer
 
-struct GeneRegulatory{V<:AbstractFeaturedGraph,T<:AbstractVector,S<:AbstractMatrix} <: MessagePassing
+struct GeneRegulatory{V<:AbstractFeaturedGraph,T<:AbstractVector} <: MessagePassing
     fg::V
     W::T
     b::T
-    R::S
+    α::T
+    β::T
 end
 
 GeneRegulatory(al::AbstractVector{<:AbstractVector{<:Integer}}, dim::Integer;
@@ -39,23 +40,22 @@ function GeneRegulatory(fg::AbstractFeaturedGraph, dim::Integer;
                         init=glorot_uniform, T::DataType=Float32)
     W = T.(init(dim))
     b = T.(init(dim))
-    R = T.(init(dim, dim))
-    R .-= LowerTriangular(R)
-    R[1,1] = init(1)[1]
-    GeneRegulatory(fg, W, b, R)
+    α = T.(init(dim))
+    β = T.(init(dim))
+    GeneRegulatory(fg, W, b, α, β)
 end
 
 @functor GeneRegulatory
 
 function update_batch_edge(l::GeneRegulatory, adj, X::AbstractMatrix)
+    H = @. σ(l.W * log(X) + l.b)
     n = size(adj, 1)
-    vcat([apply_batch_message(l, i, adj[i], X) for i in 1:n]...)
+    vcat([apply_batch_message(l, adj[i], H) for i in 1:n]...)
 end
 
-@inline function apply_batch_message(l::GeneRegulatory, i, js, X::AbstractMatrix)
-    h = σ.(view(l.W,js) .* log.(view(X,js,:)) .+ view(l.b,js))
-    m = [view(h,:,j)'*view(l.R,js,js)*view(h,:,j) for j = 1:size(h,2)] # BUG
-    m'
+@inline function apply_batch_message(l::GeneRegulatory, js, H::AbstractMatrix)
+    M = view(l.β,js) .+ view(l.α,js) .* view(H,js,:)
+    prod(M, dims=1)
 end
 
 propagate(l::GeneRegulatory, adj, X::AbstractMatrix) = update_batch_edge(l, adj, X)

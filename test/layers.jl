@@ -1,7 +1,7 @@
 T = Float32
 D = 10
-numGene = 10000
-numCell = 3000
+numGene = 100
+numCell = 30
 
 A = rand([0,1], numGene, numGene)
 A = T.(A .| A')
@@ -29,9 +29,10 @@ A = T.(A .| A')
         l = GeneRegulatory(adjacency_list(A), numGene)
         @test size(l.W) == (numGene,)
         @test size(l.b) == (numGene,)
-        @test size(l.R) == (numGene, numGene)
+        @test size(l.α) == (numGene,)
+        @test size(l.β) == (numGene,)
 
-        # Y = l(X)
-        # @test size(Y) == (numGene, numCell)
+        Y = l(X)
+        @test size(Y) == (numGene, numCell)
     end
 end
