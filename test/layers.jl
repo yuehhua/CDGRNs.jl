@@ -34,5 +34,14 @@ A = T.(A .| A')
 
         Y = l(X)
         @test size(Y) == (numGene, numCell)
+
+        g = Zygote.gradient(x -> sum(l(x)), X)[1]
+        @test size(g) == size(X)
+
+        g = Zygote.gradient(model -> sum(model(X)), l)[1]
+        @test size(g.W) == size(l.W)
+        @test size(g.b) == size(l.b)
+        @test size(g.α) == size(l.α)
+        @test size(g.β) == size(l.β)
     end
 end
