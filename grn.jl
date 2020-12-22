@@ -26,8 +26,8 @@ CSV.write(joinpath(dir, "gene_list.csv"), gene_list)
 ## Dimensions
 
 d = 3
-numGene = nv(dg)
-numCell = ncol(prof)
+numGene = 500#nv(dg)
+numCell = 100#ncol(prof)
 
 ## Preprocessing
 
@@ -64,7 +64,7 @@ train_y = prepare_y(prof, gene2num, numGene, numCell)
 
 ## Model
 
-model = Chain(Zygote.hook(() -> print("."), Concentration(d=>numGene)),
+model = Chain(Concentration(d=>numGene),
               GeneRegulatory(A, numGene))
 
 ## Loss
@@ -79,8 +79,8 @@ Y = model(train_X)
 @show loss(train_X, train_y)
 
 # test gradient
-# @show gradient(model, train_X)
-# @show gradient(X -> loss(X, train_y), train_X)
+@show gradient(model, train_X)
+@show gradient(X -> loss(X, train_y), train_X)
 
 # profile gradient
 # using Profile

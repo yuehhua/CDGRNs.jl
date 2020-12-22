@@ -1,7 +1,7 @@
 T = Float32
 D = 10
-numGene = 100
-numCell = 30
+numGene = 1000
+numCell = 300
 
 A = rand([0,1], numGene, numGene)
 A = T.(A .| A')

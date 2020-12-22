@@ -49,11 +49,11 @@ end
 
 function update_batch_edge(l::GeneRegulatory, adj, X::AbstractMatrix)
     H = @. σ(l.W * log(X) + l.b)
-    n = size(adj, 1)
-    vcat([apply_batch_message(l, adj[i], H) for i in 1:n]...)
+    M = [apply_batch_message(l, adj[i], H) for i in 1:size(adj, 1)]
+    reduce(vcat, M)
 end
 
-@inline function apply_batch_message(l::GeneRegulatory, js, H::AbstractMatrix)
+@inline function apply_batch_message(l::GeneRegulatory, js::AbstractVector, H::AbstractMatrix)
     M = view(l.β,js) .+ view(l.α,js) .* view(H,js,:)
     prod(M, dims=1)
 end
