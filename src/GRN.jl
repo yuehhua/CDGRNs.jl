@@ -13,6 +13,8 @@ using Missings
 using SnowyOwl
 using SparseArrays
 
+const PROJECT_PATH = dirname(@__DIR__)
+
 export
     # layers
     Concentration,

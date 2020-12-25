@@ -1,5 +1,7 @@
 using Flux
-using Flux: mse
+using Flux: mse, throttle
+using Flux: @epochs
+using Flux.Data: DataLoader
 using GRN
 using GraphSignals
 using DataFrames
@@ -10,7 +12,7 @@ using Zygote
 
 ## Load data
 
-dir = joinpath(@__DIR__, "results")
+dir = joinpath(GRN.PROJECT_PATH, "results")
 prof = load_data(dir)
 add_unspliced_data!(prof, dir)
 add_velocity!(prof, dir)
@@ -23,11 +25,11 @@ CSV.write(joinpath(dir, "gene_list.csv"), gene_list)
 @load "results/tf_set.jld2" tf_set
 @load "results/gene2num.jld2" gene2num
 
-## Dimensions
-
+epochs = 20
+batchsize = 128
 d = 3
 numGene = nv(dg)
-numCell = 200#ncol(prof)
+numCell = ncol(prof)
 
 ## Preprocessing
 
@@ -76,12 +78,9 @@ function prepare_y(prof::Profile, gene2num::Dict, numGene, numCell)
     train_y
 end
 
-# A = adjacency_list(dg)
-# train_X = prepare_X(prof, gene2num, d, numGene, numCell)
-# train_y = prepare_y(prof, gene2num, numGene, numCell)
-A = truncat_adjl!(adjacency_list(dg), numGene)
-train_X = prepare_X(prof, truncat_gene2num!(gene2num, numGene), d, numGene, numCell)
-train_y = prepare_y(prof, truncat_gene2num!(gene2num, numGene), numGene, numCell)
+A = adjacency_list(dg)
+train_X = prepare_X(prof, gene2num, d, numGene, numCell)
+train_y = prepare_y(prof, gene2num, numGene, numCell)
 
 ## Model
 
@@ -103,3 +102,12 @@ function test_gradient(X, Y)
     @show gradient(x -> loss(x, Y), X)
 end
 
+# test_model(X, Y)
+# test_gradient(X, Y)
+
+ps = Flux.params(model)
+train_data = DataLoader(train_X, train_y, batchsize=batchsize, shuffle=true)
+opt = ADAM(0.01)
+evalcb() = @show(loss(train_X, train_y))
+
+@epochs epochs Flux.train!(loss, ps, train_data, opt, cb=throttle(evalcb, 10))
