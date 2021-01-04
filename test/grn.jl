@@ -27,6 +27,8 @@ CSV.write(joinpath(dir, "gene_list.csv"), gene_list)
 
 epochs = 20
 batchsize = 128
+λ = 1e-4
+
 d = 3
 numGene = nv(dg)
 numCell = ncol(prof)
@@ -89,7 +91,8 @@ model = Chain(Concentration(d=>numGene),
 
 ## Loss
 
-loss(X, y) = mse(model(X), y)
+ps = Flux.params(model)
+loss(X, y) = mse(model(X), y) + λ*sum(xs -> sum(abs2, xs), ps)
 
 function test_model(X, Y)
     Ŷ = model(X)
@@ -105,7 +108,6 @@ end
 # test_model(X, Y)
 # test_gradient(X, Y)
 
-ps = Flux.params(model)
 train_data = DataLoader(train_X, train_y, batchsize=batchsize, shuffle=true)
 opt = ADAM(0.01)
 evalcb() = @show(loss(train_X, train_y))
