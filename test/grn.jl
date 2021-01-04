@@ -86,7 +86,7 @@ train_y = prepare_y(prof, gene2num, numGene, numCell)
 
 ## Model
 
-model = Chain(Concentration(d=>numGene),
+model = Chain(Concentration(d=>numGene, softplus),
               GeneRegulatory(A, numGene))
 
 ## Loss

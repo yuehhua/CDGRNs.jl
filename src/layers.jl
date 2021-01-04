@@ -3,19 +3,20 @@
 struct Concentration{T<:AbstractMatrix,S<:AbstractVector}
     W::T
     b::S
+    σ
 end
 
-function Concentration(ch::Pair{<:Integer,<:Integer}; init=glorot_uniform, T::DataType=Float32)
+function Concentration(ch::Pair{<:Integer,<:Integer}, σ=identity; init=glorot_uniform, T::DataType=Float32)
     W = T.(init(ch[1], ch[2]))
     b = T.(init(ch[2]))
-    Concentration(W, b)
+    Concentration(W, b, σ)
 end
 
 @functor Concentration
 
 function (l::Concentration)(X::AbstractArray)
     WX = reshape(sum(l.W .* X, dims=1), size(X,2), size(X,3))
-    softplus.(WX .+ l.b)
+    l.σ.(WX .+ l.b)
 end
 
 
