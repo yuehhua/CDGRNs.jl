@@ -32,7 +32,9 @@ export
     make_graph,
 
     # utils
-    make_mapping
+    make_mapping,
+    truncat_adjl!,
+    truncat_gene2num!
 
 
 include("layers.jl")

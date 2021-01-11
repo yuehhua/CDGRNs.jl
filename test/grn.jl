@@ -35,24 +35,6 @@ numCell = ncol(prof)
 
 ## Preprocessing
 
-function truncat_adjl!(adjl::Vector, n)
-    adjl = adjl[1:n]
-    for i = 1:n
-        l = adjl[i]
-        adjl[i] = l[l .<= n]
-    end
-    adjl
-end
-
-function truncat_gene2num!(gene2num::Dict, n)
-    for (k, v) in gene2num
-        if v > n
-            delete!(gene2num, k)
-        end
-    end
-    gene2num
-end
-
 function prepare_X(prof::Profile, gene2num::Dict, d, numGene, numCell)
     spliced = prof.layers[:spliced]
     velocity = prof.layers[:velocity]
