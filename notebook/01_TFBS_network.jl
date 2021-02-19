@@ -106,7 +106,10 @@ dg
 badjlist = dg.badjlist
 
 # ╔═╡ f10c0af4-727b-11eb-23ef-fd297a93f1c5
-
+begin
+	@save "../results/tf_gene_network.jld2" dg
+	@save "../results/gene_set.jld2" gene_set=hgnc_gene_tf_set
+end
 
 # ╔═╡ Cell order:
 # ╟─b8f858f0-7273-11eb-07f8-7f3cf2a7ba71
