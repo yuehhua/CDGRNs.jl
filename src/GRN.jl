@@ -17,6 +17,12 @@ using SparseArrays
 const PROJECT_PATH = dirname(@__DIR__)
 
 export
+    # distributions
+    DistributionTransformation,
+    fit,
+    transform,
+    fit_transform,
+
     # layers
     Concentration,
     GeneRegulatory,
