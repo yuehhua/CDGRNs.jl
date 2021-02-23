@@ -8,6 +8,7 @@ using GeometricFlux
 using GraphSignals: AbstractFeaturedGraph, FeaturedGraph, has_graph, adjacency_list
 using CSV
 using DataFrames
+using Distributions
 using LightGraphs: SimpleDiGraph, add_edge!
 using Missings
 using SnowyOwl
@@ -37,6 +38,7 @@ export
     truncat_gene2num!
 
 
+include("distributions.jl")
 include("layers.jl")
 include("data.jl")
 include("preprocess.jl")
