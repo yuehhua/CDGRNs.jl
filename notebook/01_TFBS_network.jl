@@ -70,7 +70,7 @@ begin
 end
 
 # ╔═╡ 97d5e81c-7279-11eb-0ec9-95fa2ef7656a
-md"## Check gene set includes all tf set"
+md"## Check if gene set includes all tf set"
 
 # ╔═╡ a24cd350-7279-11eb-2de3-b1c4a1695102
 hgnc_tf_set ⊆ hgnc_gene_set
