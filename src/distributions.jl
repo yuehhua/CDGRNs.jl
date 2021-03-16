@@ -9,6 +9,12 @@ function fit(::Type{DistributionTransformation}, dist::Type{<:Distributions.Dist
     DistributionTransformation(model, normal)
 end
 
+function transform!(trans::DistributionTransformation, xs::AbstractArray)
+    for i = CartesianIndices(xs)
+        xs[i] = quantile(trans.dst, cdf(trans.src, xs[i]))
+    end
+end
+
 function transform(trans::DistributionTransformation, xs::AbstractArray)
     quantile.(trans.dst, cdf.(trans.src, xs))
 end

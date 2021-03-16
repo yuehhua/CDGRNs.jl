@@ -21,6 +21,7 @@ export
     DistributionTransformation,
     fit,
     transform,
+    transform!,
     fit_transform,
 
     # layers
