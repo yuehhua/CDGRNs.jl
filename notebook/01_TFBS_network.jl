@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.20
+# v0.12.21
 
 using Markdown
 using InteractiveUtils
@@ -12,6 +12,15 @@ begin
 	const PROJECT_PATH = dirname(@__DIR__)
 	const DATA_PATH = joinpath(PROJECT_PATH, "data", "fantom5_cat")
 end;
+
+# ╔═╡ 79745f76-867d-11eb-158d-33f19c2cda5f
+html"""
+<style>
+	main {
+		max-width: 100%;
+	}
+</style>
+"""
 
 # ╔═╡ b8f858f0-7273-11eb-07f8-7f3cf2a7ba71
 md"# Create TFBS network"
@@ -112,6 +121,7 @@ begin
 end
 
 # ╔═╡ Cell order:
+# ╟─79745f76-867d-11eb-158d-33f19c2cda5f
 # ╟─b8f858f0-7273-11eb-07f8-7f3cf2a7ba71
 # ╠═cba12a86-7273-11eb-1796-2d30229604dd
 # ╟─e496f084-7273-11eb-276a-7111b6d133ed
