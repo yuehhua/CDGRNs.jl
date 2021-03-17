@@ -32,6 +32,7 @@ begin
 	prof = load_data(dir)
 	add_unspliced_data!(prof, dir)
 	add_velocity!(prof, dir)
+	add_moments!(prof, dir)
 end
 
 # ╔═╡ f55f2fb2-72c3-11eb-08d2-1180295c91b6
@@ -62,9 +63,9 @@ begin
 	select_genes(x) = !ismissing(x) && x .≥ 0.1
 	vars = filter(:fit_likelihood => select_genes, prof.var)
 	data = prof.data[select_genes.(prof.var.fit_likelihood), :]
-	u = prof.layers[:unspliced][select_genes.(prof.var.fit_likelihood), :]
+	u = prof.layers[:Mu][select_genes.(prof.var.fit_likelihood), :]
 	vᵤ = prof.layers[:velocity_u][select_genes.(prof.var.fit_likelihood), :]
-	s = prof.layers[:spliced][select_genes.(prof.var.fit_likelihood), :]
+	s = prof.layers[:Ms][select_genes.(prof.var.fit_likelihood), :]
 	vₛ = prof.layers[:velocity][select_genes.(prof.var.fit_likelihood), :]
 	
 	sort(vars, :fit_likelihood, rev=true)
@@ -75,9 +76,9 @@ begin
 	select_tfs(x) = uppercase(x) in tf_set
 	tf_vars = filter(:index => select_tfs, prof.var)
 	tf_data = prof.data[select_tfs.(prof.var.index), :]
-	tf_u = prof.layers[:unspliced][select_tfs.(prof.var.index), :]
+	tf_u = prof.layers[:Mu][select_tfs.(prof.var.index), :]
 	tf_vᵤ = prof.layers[:velocity_u][select_tfs.(prof.var.index), :]
-	tf_s = prof.layers[:spliced][select_tfs.(prof.var.index), :]
+	tf_s = prof.layers[:Ms][select_tfs.(prof.var.index), :]
 	tf_vₛ = prof.layers[:velocity][select_tfs.(prof.var.index), :]
 	
 	tf_data = tf_data[.!(ismissing.(tf_vars.fit_likelihood)), :]

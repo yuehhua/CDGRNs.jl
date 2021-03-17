@@ -35,6 +35,7 @@ export
     load_data,
     add_unspliced_data!,
     add_velocity!,
+    add_moments!,
 
     # preprocess
     make_graph,

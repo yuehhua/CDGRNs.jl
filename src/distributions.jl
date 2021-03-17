@@ -4,7 +4,7 @@ struct DistributionTransformation{T<:Distribution,S<:Distribution}
 end
 
 function fit(::Type{DistributionTransformation}, dist::Type{<:Distributions.Distribution}, xs::AbstractArray)
-	model = fit(dist, xs)
+	model = Distributions.fit(dist, xs)
 	normal = Normal(mean(model), std(model))
     DistributionTransformation(model, normal)
 end
