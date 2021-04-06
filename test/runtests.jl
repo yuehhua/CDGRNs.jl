@@ -10,7 +10,9 @@ using Test
 
 tests = [
     "layers",
-    "data"
+    "data",
+    "regression",
+    "mixture",
 ]
 
 @testset "GRN" begin
