@@ -15,6 +15,8 @@ tests = [
     "mixture",
 ]
 
+include("test_utils.jl")
+
 @testset "GRN" begin
     for t in tests
         include("$(t).jl")

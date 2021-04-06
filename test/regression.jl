@@ -22,6 +22,7 @@ using Statistics
     model_true = lm(@formula(Y ~ X), df)
     @test size(model.β) == (2,)
     @test model.β ≈ GLM.coef(model_true)
+    @test check_confint(model.β, stderror(model), GLM.coef(model_true))
     @test std(model) ≈ Statistics.std(residual(model, x, y), corrected=false)
 
     @test size(predict(model, x)) == size(y)
@@ -42,6 +43,7 @@ using Statistics
     model_true = lm(@formula(Y ~ X1 + X2 + X3 + X4 + X5), df)
     @test size(model.β) == (d+1,)
     @test model.β ≈ GLM.coef(model_true)
+    @test check_confint(model.β, stderror(model), GLM.coef(model_true))
     @test std(model) ≈ Statistics.std(residual(model, X, y), corrected=false)
 
     @test size(predict(model, X)) == size(y)

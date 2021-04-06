@@ -4,14 +4,17 @@ using Statistics
 
 import Statistics: std
 
-mutable struct LinearRegression{V<:AbstractVector,T<:Real}
+mutable struct LinearRegression{T<:Real,V<:AbstractVector}
     β::V
     σ::T
+    se::V
 end
 
-LinearRegression(d::Integer) = LinearRegression(rand(d+1), rand())
+LinearRegression(d::Integer) = LinearRegression(rand(d+1), rand(),rand(d+1))
 
+coef(model::LinearRegression) = model.β
 std(model::LinearRegression) = model.σ
+stderror(model::LinearRegression) = model.se
 
 # X ∈ (feat * obs)
 design_matrix(x::AbstractVector{T}) where {T} = vcat(ones(T, 1, length(x)), x')
@@ -24,11 +27,23 @@ residual(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector) = y - 
 SSE(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector) = residual(model, X, y)'*residual(model, X, y)
 MSE(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector) = SSE(model, X, y) / (length(y) - 2)
 
-function fit!(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector)
+function fit!(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector{T}) where {T}
     D = design_matrix(X)
     model.β = inv(D*D') * D*y
     r = residual(model, X, y)
     model.σ = sqrt(r'*r / length(r))
+    # se of slopes
+    n = length(y)
+    X̄ = mean(X, dims=2)
+    ϵₓ = X .- X̄
+    SS = sum(x -> x.^2, ϵₓ, dims=2)
+    mse = MSE(model, X, y)
+    se_slope = sqrt.(mse ./ SS)
+    # se of intercept
+    X̄ = [one(T), (X̄.^2)...]
+    SS = [n, SS...]
+    se_intercept = sqrt(mse * sum(X̄ ./ SS))
+    model.se = [se_intercept, se_slope...]
     model
 end
 

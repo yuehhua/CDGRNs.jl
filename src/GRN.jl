@@ -9,7 +9,7 @@ using Missings
 using SnowyOwl
 using SparseArrays
 
-import GLM: fit, predict
+import GLM: fit, predict, coef, stderror
 
 const PROJECT_PATH = dirname(@__DIR__)
 
