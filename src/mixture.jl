@@ -61,7 +61,7 @@ function fit!(model::MixtureRegression, X::AbstractMatrix, y::AbstractVector{T};
 end
 
 function fit(::Type{MixtureRegression{K}}, X::AbstractMatrix, y::AbstractVector{T};
-             max_iter::Integer=5, init_clusters=rand(collect(1:k), length(y))) where {K,T<:Real}
+             max_iter::Integer=5, init_clusters=rand(collect(1:K), length(y))) where {K,T<:Real}
     S = Vector{T}
     model = MixtureRegression{K,LinearRegression,Int,S}(LinearRegression[], init_clusters, S[])
     return fit!(model, X, y; max_iter=max_iter)
