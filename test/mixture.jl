@@ -25,6 +25,8 @@ using GLM
     data.cluster = rand([1,2], 2*n)
 
     model = fit(MixtureRegression{2}, Matrix(data.X'), data.Y; max_iter=iter, init_clusters=data.cluster)
-    @test (model.models[1].β ≈ GLM.coef(model1_true)) | (model.models[1].β ≈ GLM.coef(model2_true))
-    @test (model.models[2].β ≈ GLM.coef(model1_true)) | (model.models[2].β ≈ GLM.coef(model2_true))
+    @test check_confint(model.models[1].β, stderror(model.models[1]), GLM.coef(model1_true)) | 
+        check_confint(model.models[1].β, stderror(model.models[1]), GLM.coef(model2_true))
+    @test check_confint(model.models[2].β, stderror(model.models[2]), GLM.coef(model1_true)) | 
+        check_confint(model.models[2].β, stderror(model.models[2]), GLM.coef(model2_true))
 end
