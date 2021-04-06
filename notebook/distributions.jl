@@ -50,7 +50,7 @@ end
 md"## Model"
 
 # ╔═╡ 78708596-74c1-11eb-2f00-b5a7b891caa3
-model = fit(Gamma, collect(nonzero_xs))
+model = Distributions.fit(Gamma, collect(nonzero_xs))
 
 # ╔═╡ 0a2f26f8-74c3-11eb-29c5-4982d5b461f0
 plot(layer(x->pdf(model, x), 0, 2.5, color=[colorant"black"]),
@@ -61,17 +61,11 @@ plot(layer(x->pdf(model, x), 0, 2.5, color=[colorant"black"]),
 # ╔═╡ 670bbfea-7580-11eb-27af-956a85df7a5f
 md"### Correction by normal distribution"
 
-# ╔═╡ 7ca9b9e6-75a4-11eb-3587-e7457bb672c8
-function transform(dist::Type{<:Distributions.Distribution}, xs)
-	model = fit(dist, xs)
-	normal = Normal(mean(model), std(model))
-	zs = quantile.(normal, cdf.(model, xs))
-	return zs, normal
-end
-
 # ╔═╡ 63a2a626-757f-11eb-1c67-43eb91ea3767
 begin
-	zs, normal = transform(Gamma, nonzero_xs)
+	dt = GRN.fit(DistributionTransformation, Gamma, nonzero_xs)
+	zs = GRN.transform(dt, nonzero_xs)
+	normal = dt.dst
 	plot(layer(x->pdf(normal, x), 0, 2.5, color=[colorant"black"]),
 		 layer(x=zs, Geom.histogram(density=true)),
 		 Guide.xlabel("Expression"),
@@ -90,5 +84,4 @@ end
 # ╠═78708596-74c1-11eb-2f00-b5a7b891caa3
 # ╠═0a2f26f8-74c3-11eb-29c5-4982d5b461f0
 # ╟─670bbfea-7580-11eb-27af-956a85df7a5f
-# ╠═7ca9b9e6-75a4-11eb-3587-e7457bb672c8
 # ╠═63a2a626-757f-11eb-1c67-43eb91ea3767

@@ -1,11 +1,6 @@
 module GRN
 
 using LinearAlgebra
-using Flux
-using Flux: glorot_uniform
-using Flux: @functor
-using GeometricFlux
-using GraphSignals: AbstractFeaturedGraph, FeaturedGraph, has_graph, adjacency_list
 using CSV
 using DataFrames
 using Distributions
@@ -13,6 +8,8 @@ using LightGraphs: SimpleDiGraph, add_edge!
 using Missings
 using SnowyOwl
 using SparseArrays
+
+import GLM: fit, predict, coef, stderror
 
 const PROJECT_PATH = dirname(@__DIR__)
 
@@ -43,7 +40,25 @@ export
     # utils
     make_mapping,
     truncat_adjl!,
-    truncat_gene2num!
+    truncat_gene2num!,
+
+    # regression
+    LinearRegression,
+    std,
+    design_matrix,
+    predict,
+    fit, fit!,
+    residual,
+    likelihood,
+
+    # mixture
+    MixtureRegression,
+    hard_split,
+    probabilistic_split,
+    maximize_likelihood!,
+    update_expectation!,
+    fit!,
+    fit
 
 
 include("distributions.jl")
@@ -51,5 +66,8 @@ include("layers.jl")
 include("data.jl")
 include("preprocess.jl")
 include("utils.jl")
+
+include("regression.jl")
+include("mixture.jl")
 
 end # module

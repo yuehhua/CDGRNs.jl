@@ -1,3 +1,9 @@
+using Flux
+using Flux: glorot_uniform
+using Flux: @functor
+using GeometricFlux
+using GraphSignals: AbstractFeaturedGraph, FeaturedGraph, has_graph, adjacency_list
+
 ## Protein Concentration Layer
 
 struct Concentration{T<:AbstractMatrix,S<:AbstractVector}
