@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.21
+# v0.14.0
 
 using Markdown
 using InteractiveUtils
@@ -12,7 +12,7 @@ begin
 	using JLD2
 	using SnowyOwl
 	using Gadfly
-	using Statistics, InformationMeasures
+	using Statistics
 	using Distributions
 	using GLM
 	Gadfly.set_default_plot_size(8inch, 6inch)
@@ -146,12 +146,6 @@ begin
 	simulate.s = map(τ -> SnowyOwl.spliced(τ, s₀, u₀, α, β, γ), simulate.τ)
 end;
 
-# ╔═╡ aaf05704-7b32-11eb-0285-81e360708dc8
-plot(
-	layer(simulate, x=:s, y=:u, Geom.line),
-	# layer(simulate, x=:u, y=:s, Geom.line),
-)
-
 # ╔═╡ e8696496-7b31-11eb-112a-cf977d01a9fa
 plot(layer(simulate, x=:s, y=:u, Geom.line),
 	 layer(df, x=:X, y=:Y, color=:Cell, Geom.point),
@@ -162,11 +156,14 @@ plot(layer(simulate, x=:s, y=:u, Geom.line),
 # ╔═╡ 479ca4b2-7285-11eb-1ae4-1f7f14720b86
 md"## Analysis of $s_{tf}$ and $u_{targ}$"
 
+# ╔═╡ 252009ac-8abf-11eb-2d8a-e375e0b46ec1
+md"good: 2, 4, 5, 6, 7, 8; bad: 1, 3, "
+
 # ╔═╡ 7fd240e8-72c5-11eb-25b9-59198fb66347
 j = 8
 
 # ╔═╡ 5187deca-72c5-11eb-3feb-5bf0ba1babf3
-plot(x=tf_s[j, :],
+p1 = plot(x=tf_s[j, :],
 	 y=u[i, :], 
 	 color=prof.obs.clusters,
 	 Geom.point, Guide.title("Relationship of s_tf and u_targ"),
@@ -174,14 +171,51 @@ plot(x=tf_s[j, :],
 	 Guide.ylabel("Unspliced RNA of target gene, $(vars[i, :index])"),
 )
 
+# ╔═╡ 0774c424-8abf-11eb-066d-9b719d3ad3e1
+p1 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene", "$(tf_vars[j, :index])-$(vars[i, :index]) plot.svg"), 12inch, 9inch)
+
 # ╔═╡ 0c155df8-72c6-11eb-2299-5bf61dd3c4cd
-plot(x=tf_s[j, :], Scale.x_log2(),
+p2 = plot(x=tf_s[j, :], Scale.x_log2(),
 	 y=u[i, :], Scale.y_log2(),
 	 color=prof.obs.clusters,
 	 Geom.point, Guide.title("Relationship of s_tf and u_targ"),
 	 Guide.xlabel("log2 spliced RNA of TF gene, $(tf_vars[j, :index])"),
 	 Guide.ylabel("log2 unspliced RNA of target gene, $(vars[i, :index])"),
 )
+
+# ╔═╡ 11cc0f40-8abf-11eb-38f9-6b180a27e150
+p2 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene", "$(tf_vars[j, :index])-$(vars[i, :index]) log plot.svg"), 12inch, 9inch)
+
+# ╔═╡ 1f9fb237-3a5f-4d8a-a471-abb4da4bb3fd
+begin
+	df2 = DataFrame(X=tf_s[j, :], Y=u[i, :])
+	df2.logX = log2.(df2.X)
+	df2.logY = log2.(df2.Y)
+	df2.cluster = prof.obs.clusters
+	model = fit(MixtureRegression{4}, Matrix(df2.logX'), df2.logY, max_iter=50)
+end;
+
+# ╔═╡ 2f003762-d47a-472a-9301-4586c4292a5c
+p3 = plot(
+	 layer(x -> coef(model.models[1])'*[1, x], -4, 4),
+	 layer(x -> coef(model.models[2])'*[1, x], -4, 4),
+	 layer(x -> coef(model.models[3])'*[1, x], -4, 4),
+	 layer(x -> coef(model.models[4])'*[1, x], -4, 4),
+	 layer(df2, x=:logX, y=:logY, color=:cluster, Geom.point),
+	 Guide.title("Relationship of s_tf and u_targ"),
+	 Guide.xlabel("log2 spliced RNA of TF gene, $(tf_vars[j, :index])"),
+	 Guide.ylabel("log2 unspliced RNA of target gene, $(vars[i, :index])"),
+	 Coord.cartesian(xmin=-4.8, xmax=3.5, ymin=1.5, ymax=4.9)
+)
+
+# ╔═╡ f1e0c594-6aae-4351-93d7-d09dd3004e56
+p3 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene", "mixture model $(tf_vars[j, :index])-$(vars[i, :index]) log plot.svg"), 12inch, 9inch)
+
+# ╔═╡ f19d5fbf-eb39-4596-9118-e5e85b787b6f
+begin
+	import Cairo
+	p3 |> PNG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene", "mixture model $(tf_vars[j, :index])-$(vars[i, :index]) log plot.png"), 12inch, 9inch)
+end
 
 # ╔═╡ Cell order:
 # ╟─6e36a6d2-86d2-11eb-210a-b5589313a599
@@ -206,9 +240,15 @@ plot(x=tf_s[j, :], Scale.x_log2(),
 # ╟─bfd61bba-7b26-11eb-1850-350f284b6287
 # ╠═d6365c1a-7b28-11eb-3081-69d9f6d06d21
 # ╠═4b94e676-7b32-11eb-0591-c102c1ceccef
-# ╠═aaf05704-7b32-11eb-0285-81e360708dc8
 # ╠═e8696496-7b31-11eb-112a-cf977d01a9fa
 # ╟─479ca4b2-7285-11eb-1ae4-1f7f14720b86
+# ╠═252009ac-8abf-11eb-2d8a-e375e0b46ec1
 # ╠═7fd240e8-72c5-11eb-25b9-59198fb66347
 # ╠═5187deca-72c5-11eb-3feb-5bf0ba1babf3
+# ╠═0774c424-8abf-11eb-066d-9b719d3ad3e1
 # ╠═0c155df8-72c6-11eb-2299-5bf61dd3c4cd
+# ╠═11cc0f40-8abf-11eb-38f9-6b180a27e150
+# ╠═1f9fb237-3a5f-4d8a-a471-abb4da4bb3fd
+# ╠═2f003762-d47a-472a-9301-4586c4292a5c
+# ╠═f1e0c594-6aae-4351-93d7-d09dd3004e56
+# ╠═f19d5fbf-eb39-4596-9118-e5e85b787b6f
