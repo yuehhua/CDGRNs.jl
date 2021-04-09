@@ -26,9 +26,9 @@ function probabilistic_split(likelihoods...)
     res
 end
 
-function maximize_likelihood!(model::MixtureRegression{K}, X::AbstractMatrix, y::AbstractVector) where {K}
+function maximize_likelihood!(model::MixtureRegression{K}, X::AbstractVecOrMat, y::AbstractVector) where {K}
     for c = 1:K
-        X_c = view(X, :, model.clusters .== c)
+        X_c = view(X, model.clusters .== c, :)
         y_c = view(y, model.clusters .== c)
         fit!(model.models[c], X_c, y_c)
         model.likelihoods[c] .= likelihood(model.models[c], X, y)
@@ -45,7 +45,7 @@ function update_expectation!(model::MixtureRegression; methods=probabilistic_spl
     end
 end
 
-function fit!(model::MixtureRegression, X::AbstractMatrix, y::AbstractVector{T};
+function fit!(model::MixtureRegression, X::AbstractVecOrMat, y::AbstractVector{T};
               max_iter::Integer=5) where {T<:Real}
     for i in 1:max_iter
         maximize_likelihood!(model, X, y)
@@ -56,10 +56,10 @@ function fit!(model::MixtureRegression, X::AbstractMatrix, y::AbstractVector{T};
     return model
 end
 
-function fit(::Type{MixtureRegression{K}}, X::AbstractMatrix, y::AbstractVector{T};
+function fit(::Type{MixtureRegression{K}}, X::AbstractVecOrMat, y::AbstractVector{T};
              max_iter::Integer=5, init=()->gmm_init(K, X, y)) where {K,T<:Real}
     n = length(y)
-    models = [LinearRegression(size(X, 1)) for i = 1:K]
+    models = [LinearRegression(size(X, 2)) for i = 1:K]
     init_clusters = init()
     init_likelihoods = [Vector{T}(undef, n) for i = 1:K]
     model = MixtureRegression{K}(models, init_clusters, init_likelihoods)

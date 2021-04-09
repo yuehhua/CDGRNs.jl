@@ -57,7 +57,7 @@ function fit(::Type{LinearRegression}, X::AbstractMatrix, y::AbstractVector)
     fit!(model, X, y)
 end
 
-function likelihood(model::LinearRegression, X::AbstractMatrix, y::AbstractVector)
+function likelihood(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector)
     normal = Normal(0, std(model))
     return pdf.(normal, residual(model, X, y))
 end
