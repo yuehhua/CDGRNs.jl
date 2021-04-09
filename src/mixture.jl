@@ -7,6 +7,10 @@ struct MixtureRegression{K,R,T<:Integer,S}
     models::Vector{R}
     clusters::Vector{T}
     likelihoods::Vector{S}
+
+    function MixtureRegression{K}(models::Vector{R}, clusters::Vector{T}, likelihoods::AbstractVector) where {K,R,T}
+        new{K,R,T,eltype(likelihoods)}(models, clusters, likelihoods)
+    end
 end
 
 hard_split(likelihoods...) = argmax.(zip(likelihoods...))
@@ -23,20 +27,11 @@ function probabilistic_split(likelihoods...)
 end
 
 function maximize_likelihood!(model::MixtureRegression{K}, X::AbstractMatrix, y::AbstractVector) where {K}
-    if isempty(model.models)
-        for c = 1:K
-            X_c = X[:, model.clusters .== c]
-            y_c = y[model.clusters .== c]
-            push!(model.models, fit(LinearRegression, X_c, y_c))
-            push!(model.likelihoods, likelihood(model.models[c], X, y))
-        end
-    else
-        for c = 1:K
-            X_c = X[:, model.clusters .== c]
-            y_c = y[model.clusters .== c]
-            fit!(model.models[c], X_c, y_c)
-            model.likelihoods[c] .= likelihood(model.models[c], X, y)
-        end
+    for c = 1:K
+        X_c = view(X, :, model.clusters .== c)
+        y_c = view(y, model.clusters .== c)
+        fit!(model.models[c], X_c, y_c)
+        model.likelihoods[c] .= likelihood(model.models[c], X, y)
     end
     return model.likelihoods
 end
@@ -63,9 +58,11 @@ end
 
 function fit(::Type{MixtureRegression{K}}, X::AbstractMatrix, y::AbstractVector{T};
              max_iter::Integer=5, init=()->gmm_init(K, X, y)) where {K,T<:Real}
-    S = Vector{T}
+    n = length(y)
+    models = [LinearRegression(size(X, 1)) for i = 1:K]
     init_clusters = init()
-    model = MixtureRegression{K,LinearRegression,Int,S}(LinearRegression[], init_clusters, S[])
+    init_likelihoods = [Vector{T}(undef, n) for i = 1:K]
+    model = MixtureRegression{K}(models, init_clusters, init_likelihoods)
     return fit!(model, X, y; max_iter=max_iter)
 end
 
