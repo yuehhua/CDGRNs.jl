@@ -1,6 +1,7 @@
 using Distributions
 using GLM
 using StatsBase
+using GaussianMixtures
 
 struct MixtureRegression{K,R,T<:Integer,S}
     models::Vector{R}
@@ -61,8 +62,19 @@ function fit!(model::MixtureRegression, X::AbstractMatrix, y::AbstractVector{T};
 end
 
 function fit(::Type{MixtureRegression{K}}, X::AbstractMatrix, y::AbstractVector{T};
-             max_iter::Integer=5, init_clusters=rand(collect(1:K), length(y))) where {K,T<:Real}
+             max_iter::Integer=5, init=()->gmm_init(K, X, y)) where {K,T<:Real}
     S = Vector{T}
+    init_clusters = init()
     model = MixtureRegression{K,LinearRegression,Int,S}(LinearRegression[], init_clusters, S[])
     return fit!(model, X, y; max_iter=max_iter)
+end
+
+random_init(k, n) = rand(collect(1:k), n)
+
+function gmm_init(k, xs, ys)
+    train = hcat(xs, ys)
+	gmm = GaussianMixtures.GMM(k, train, kind=:full)
+	ll = GaussianMixtures.llpg(gmm, train)
+	clusters = vec(map(x -> x[2], argmax(ll, dims=2)))
+    return clusters
 end
