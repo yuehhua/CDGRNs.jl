@@ -26,9 +26,12 @@ function probabilistic_split(likelihoods...)
     res
 end
 
+_view(X::AbstractMatrix, clst, c) = view(X, clst .== c, :)
+_view(x::AbstractVector, clst, c) = view(x, clst .== c)
+
 function maximize_likelihood!(model::MixtureRegression{K}, X::AbstractVecOrMat, y::AbstractVector) where {K}
     for c = 1:K
-        X_c = view(X, model.clusters .== c, :)
+        X_c = _view(X, model.clusters, c)
         y_c = view(y, model.clusters .== c)
         fit!(model.models[c], X_c, y_c)
         model.likelihoods[c] .= likelihood(model.models[c], X, y)
