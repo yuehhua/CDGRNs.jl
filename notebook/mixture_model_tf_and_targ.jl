@@ -91,8 +91,8 @@ md"## Select target gene"
 # ╔═╡ 980807ca-72ba-11eb-0347-f744ea81b3f7
 begin
 	# gene_name = "Pcsk2"
-	# gene_name = "Ank"
-	gene_name = "Rps3"
+	gene_name = "Ank"
+	# gene_name = "Rps3"
 	# gene_name = "Gng12"
 	i = collect(1:nrow(vars))[vars.index .== gene_name][1]
 end
@@ -104,13 +104,13 @@ md"## Analysis of $s_{tf}$ and $u_{targ}$"
 md"good: 2, 4, 5, 6, 7, 8; bad: 1, 3, "
 
 # ╔═╡ 7fd240e8-72c5-11eb-25b9-59198fb66347
-j = 8
+j = 7
 
 # ╔═╡ e44422fa-9fe5-461e-8c0f-aef10ebd9468
 begin
 	df = DataFrame(X=tf_s[j, :], Y=u[i, :], Cell=prof.obs.clusters)
-	df.logX = log2.(df.X)
-	df.logY = log2.(df.Y)
+	df.logX = log1p.(df.X)
+	df.logY = log1p.(df.Y)
 end
 
 # ╔═╡ 5187deca-72c5-11eb-3feb-5bf0ba1babf3
@@ -125,17 +125,16 @@ p2 = plot(df, x=:logX, y=:logY, color=:Cell,
 	 Geom.point, Guide.title("Relationship of s_tf and u_targ"),
 	 Guide.xlabel("log2 spliced RNA of TF gene, $(tf_vars[j, :index])"),
 	 Guide.ylabel("log2 unspliced RNA of target gene, $(vars[i, :index])"),
-	 Coord.cartesian(xmin=-4.8, xmax=3.5, ymin=1.5, ymax=4.9)
+	 # Coord.cartesian(xmin=-4.8, xmax=3.5, ymin=1.5, ymax=4.9)
 )
 
 # ╔═╡ 2497b33e-1713-4b5b-84bc-8e644ff85c45
 begin
-	k = 4
-	model = fit(MixtureRegression{4}, df.logX, df.logY)
+	k = 3
+	model = fit(MixtureRegression{k}, df.logX, df.logY)
+	df.clusters = string.(model.clusters)
+	fs = [x -> coef(model.models[i])'*[1, x] for i = 1:k]
 end
-
-# ╔═╡ 2860fbb3-b265-4a04-ab9a-53ca101d1d03
-fs = [x -> coef(model.models[i])'*[1, x] for i = 1:k]
 
 # ╔═╡ 3ac387b5-838f-4fcd-87da-81cebee2a4b5
 p3 = plot(
@@ -144,11 +143,23 @@ p3 = plot(
 	 Guide.title("Relationship of s_tf and u_targ"),
 	 Guide.xlabel("log2 spliced RNA of TF gene, $(tf_vars[j, :index])"),
 	 Guide.ylabel("log2 unspliced RNA of target gene, $(vars[i, :index])"),
-	 Coord.cartesian(xmin=-4.8, xmax=3.5, ymin=1.5, ymax=4.9)
+	 Coord.cartesian(xmin=0, xmax=2.5, ymin=1.3, ymax=3.5)
+)
+
+# ╔═╡ 81e445de-d4f8-4c83-984c-1ebfc53f9f85
+p4 = plot(
+		layer(fs, -4, 4),
+		layer(df, x=:logX, y=:logY, color=:clusters, Geom.point),
+		Guide.title("Relationship of s_tf and u_targ"),
+		Guide.xlabel("log2 spliced RNA of TF gene, $(tf_vars[j, :index])"),
+		Guide.ylabel("log2 unspliced RNA of target gene, $(vars[i, :index])"),
 )
 
 # ╔═╡ f19d5fbf-eb39-4596-9118-e5e85b787b6f
 p4 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene model", "$(tf_vars[j, :index])-$(vars[i, :index]) log plot.svg"), 12inch, 9inch)
+
+# ╔═╡ 6d87de92-3b9d-477d-bee1-523a4d981c20
+p4 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene model", "$(tf_vars[j, :index])-$(vars[i, :index]) log plot-predict.svg"), 12inch, 9inch)
 
 # ╔═╡ Cell order:
 # ╟─6e36a6d2-86d2-11eb-210a-b5589313a599
@@ -171,6 +182,7 @@ p4 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene model", "$(tf_vars[j, :ind
 # ╠═5187deca-72c5-11eb-3feb-5bf0ba1babf3
 # ╠═0c155df8-72c6-11eb-2299-5bf61dd3c4cd
 # ╠═2497b33e-1713-4b5b-84bc-8e644ff85c45
-# ╠═2860fbb3-b265-4a04-ab9a-53ca101d1d03
 # ╠═3ac387b5-838f-4fcd-87da-81cebee2a4b5
 # ╠═f19d5fbf-eb39-4596-9118-e5e85b787b6f
+# ╠═81e445de-d4f8-4c83-984c-1ebfc53f9f85
+# ╠═6d87de92-3b9d-477d-bee1-523a4d981c20
