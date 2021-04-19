@@ -15,8 +15,8 @@ using Statistics
     y = w.*x .+ b .+ randn(n)*σ
     df = DataFrame(X=x, Y=y)
 
-    @test size(design_matrix(x)) == (2, n)
-    @test design_matrix(x)[1, :] == ones(T, length(x))
+    @test size(design_matrix(x)) == (n, 2)
+    @test design_matrix(x)[:, 1] == ones(T, length(x))
 
     model = GRN.fit(LinearRegression, x, y)
     model_true = lm(@formula(Y ~ X), df)
@@ -32,12 +32,12 @@ using Statistics
     # multiple regression
     w = [1., 2., 3., 4., 5]
 
-    X = randn(d, n)
-    y = X'*w .+ b .+ randn(n)*σ
-    df = DataFrame(X1=X[1,:], X2=X[2,:], X3=X[3,:], X4=X[4,:], X5=X[5,:], Y=y)
+    X = randn(n, d)
+    y = X*w .+ b .+ randn(n)*σ
+    df = DataFrame(X1=X[:,1], X2=X[:,2], X3=X[:,3], X4=X[:,4], X5=X[:,5], Y=y)
 
-    @test size(design_matrix(X)) == (d+1, n)
-    @test design_matrix(X)[1, :] == ones(T, size(X, 2))
+    @test size(design_matrix(X)) == (n, d+1)
+    @test design_matrix(X)[:, 1] == ones(T, size(X, 1))
 
     model = fit(LinearRegression, X, y)
     model_true = lm(@formula(Y ~ X1 + X2 + X3 + X4 + X5), df)

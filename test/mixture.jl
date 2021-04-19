@@ -22,9 +22,14 @@ using GLM
     model2_true = lm(@formula(Y ~ X), data2)
 
     data = DataFrame(X=vcat(x₁, x₂), Y=vcat(y₁, y₂))
-    data.cluster = rand([1,2], 2*n)
 
-    model = fit(MixtureRegression{2}, Matrix(data.X'), data.Y; max_iter=iter, init=()->data.cluster)
+    model = fit(MixtureRegression{2}, data.X, data.Y; max_iter=iter)
+    @test check_confint(model.models[1].β, stderror(model.models[1]), GLM.coef(model1_true)) | 
+        check_confint(model.models[1].β, stderror(model.models[1]), GLM.coef(model2_true))
+    @test check_confint(model.models[2].β, stderror(model.models[2]), GLM.coef(model1_true)) | 
+        check_confint(model.models[2].β, stderror(model.models[2]), GLM.coef(model2_true))
+
+    model = fit(MixtureRegression{2}, data.X, data.Y; max_iter=iter, init=()->GRN.random_init(k, 2n))
     @test check_confint(model.models[1].β, stderror(model.models[1]), GLM.coef(model1_true)) | 
         check_confint(model.models[1].β, stderror(model.models[1]), GLM.coef(model2_true))
     @test check_confint(model.models[2].β, stderror(model.models[2]), GLM.coef(model1_true)) | 

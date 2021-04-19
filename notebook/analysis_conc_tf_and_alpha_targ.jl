@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.0
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
@@ -196,17 +196,18 @@ begin
 end;
 
 # ╔═╡ 2f003762-d47a-472a-9301-4586c4292a5c
-p3 = plot(
-	 layer(x -> coef(model.models[1])'*[1, x], -4, 4),
-	 layer(x -> coef(model.models[2])'*[1, x], -4, 4),
-	 layer(x -> coef(model.models[3])'*[1, x], -4, 4),
-	 layer(x -> coef(model.models[4])'*[1, x], -4, 4),
-	 layer(df2, x=:logX, y=:logY, color=:cluster, Geom.point),
-	 Guide.title("Relationship of s_tf and u_targ"),
-	 Guide.xlabel("log2 spliced RNA of TF gene, $(tf_vars[j, :index])"),
-	 Guide.ylabel("log2 unspliced RNA of target gene, $(vars[i, :index])"),
-	 Coord.cartesian(xmin=-4.8, xmax=3.5, ymin=1.5, ymax=4.9)
-)
+begin
+	fs = [x -> coef(model.models[1])'*[1, x], x -> coef(model.models[2])'*[1, x],
+		  x -> coef(model.models[3])'*[1, x], x -> coef(model.models[4])'*[1, x]]
+	p3 = plot(
+		 layer(fs, -4, 4),
+		 layer(df2, x=:logX, y=:logY, color=:cluster, Geom.point),
+		 Guide.title("Relationship of s_tf and u_targ"),
+		 Guide.xlabel("log2 spliced RNA of TF gene, $(tf_vars[j, :index])"),
+		 Guide.ylabel("log2 unspliced RNA of target gene, $(vars[i, :index])"),
+		 Coord.cartesian(xmin=-4.8, xmax=3.5, ymin=1.5, ymax=4.9)
+	)
+end
 
 # ╔═╡ f1e0c594-6aae-4351-93d7-d09dd3004e56
 p3 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene", "mixture model $(tf_vars[j, :index])-$(vars[i, :index]) log plot.svg"), 12inch, 9inch)
@@ -216,6 +217,53 @@ begin
 	import Cairo
 	p3 |> PNG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene", "mixture model $(tf_vars[j, :index])-$(vars[i, :index]) log plot.png"), 12inch, 9inch)
 end
+
+# ╔═╡ 3ac387b5-838f-4fcd-87da-81cebee2a4b5
+p4 = plot(
+	 layer(fs, -4, 4),
+	 layer(df2, x=:logX, y=:logY, color=string.(model.clusters), Geom.point),
+	 Guide.title("Relationship of s_tf and u_targ"),
+	 Guide.xlabel("log2 spliced RNA of TF gene, $(tf_vars[j, :index])"),
+	 Guide.ylabel("log2 unspliced RNA of target gene, $(vars[i, :index])"),
+	 Coord.cartesian(xmin=-4.8, xmax=3.5, ymin=1.5, ymax=4.9)
+)
+
+# ╔═╡ ca459f0d-48fb-4613-a414-451d1d07dff3
+p4 |> PNG(joinpath(GRN.PROJECT_PATH, "pics", "mixture model log plot.png"), 12inch, 9inch)
+
+# ╔═╡ 26f9c05d-2005-44e4-8fae-fbe2840fcc66
+begin
+	function to_clst(x)
+		if x in ["Pre-endocrine", "Ngn3 high EP", "Epsilon"]
+			return 1
+		elseif x in ["Ductal", "Ngn3 low EP"]
+			return 2
+		elseif x in ["Alpha", "Delta"]
+			return 3
+		elseif x == "Beta"
+			return 4
+		end
+	end
+	init_clst = map(to_clst, df2.cluster)
+	model2 = fit(MixtureRegression{4}, Matrix(df2.logX'), df2.logY, max_iter=10, init_clusters=init_clst)
+end
+
+# ╔═╡ 7d67320f-7eb7-475f-8ede-515553d2dda4
+begin
+	fs2 = [x -> coef(model2.models[1])'*[1, x], x -> coef(model2.models[2])'*[1, x],
+		  x -> coef(model2.models[3])'*[1, x], x -> coef(model2.models[4])'*[1, x]]
+	p5 = plot(
+		 layer(fs2, -4, 4),
+		 layer(df2, x=:logX, y=:logY, color=string.(model2.clusters), Geom.point),
+		 Guide.title("Relationship of s_tf and u_targ"),
+		 Guide.xlabel("log2 spliced RNA of TF gene, $(tf_vars[j, :index])"),
+		 Guide.ylabel("log2 unspliced RNA of target gene, $(vars[i, :index])"),
+		 Coord.cartesian(xmin=-4.8, xmax=3.5, ymin=1.5, ymax=4.9)
+	)
+end
+
+# ╔═╡ c0b18aab-808e-4a59-8149-0143956ee0ad
+p5 |> PNG(joinpath(GRN.PROJECT_PATH, "pics", "mixture model log plot-manual init.png"), 12inch, 9inch)
 
 # ╔═╡ Cell order:
 # ╟─6e36a6d2-86d2-11eb-210a-b5589313a599
@@ -252,3 +300,8 @@ end
 # ╠═2f003762-d47a-472a-9301-4586c4292a5c
 # ╠═f1e0c594-6aae-4351-93d7-d09dd3004e56
 # ╠═f19d5fbf-eb39-4596-9118-e5e85b787b6f
+# ╠═3ac387b5-838f-4fcd-87da-81cebee2a4b5
+# ╠═ca459f0d-48fb-4613-a414-451d1d07dff3
+# ╠═26f9c05d-2005-44e4-8fae-fbe2840fcc66
+# ╠═7d67320f-7eb7-475f-8ede-515553d2dda4
+# ╠═c0b18aab-808e-4a59-8149-0143956ee0ad
