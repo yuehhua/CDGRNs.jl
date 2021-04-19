@@ -78,3 +78,7 @@ function gmm_init(k, xs, ys)
 	clusters = vec(map(x -> x[2], argmax(ll, dims=2)))
     return clusters
 end
+
+loglikelihood(model::MixtureRegression{K}) where {K} = sum(k -> sum(model.likelihoods[k][model.clusters .== k]), 1:K)
+
+aic(model::MixtureRegression{K}) where {K} = 2(K - loglikelihood(model))
