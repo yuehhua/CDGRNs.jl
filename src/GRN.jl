@@ -9,7 +9,7 @@ using Missings
 using SnowyOwl
 using SparseArrays
 
-import GLM: fit, predict, coef, stderror
+import GLM: fit, predict, coef, stderror, loglikelihood
 
 const PROJECT_PATH = dirname(@__DIR__)
 
@@ -58,7 +58,9 @@ export
     maximize_likelihood!,
     update_expectation!,
     fit!,
-    fit
+    fit,
+    nll,
+    aic
 
 
 include("distributions.jl")
