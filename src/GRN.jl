@@ -59,7 +59,7 @@ export
     update_expectation!,
     fit!,
     fit,
-    loglikelihood,
+    nll,
     aic
 
 

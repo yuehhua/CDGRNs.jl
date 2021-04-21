@@ -79,6 +79,9 @@ function gmm_init(k, xs, ys)
     return clusters
 end
 
-loglikelihood(model::MixtureRegression{K}) where {K} = sum(k -> sum(model.likelihoods[k][model.clusters .== k]), 1:K)
+"""
+Negative log likelihood of a mixture model
+"""
+nll(model::MixtureRegression{K}) where {K} = sum(k -> sum(model.likelihoods[k][model.clusters .== k]), 1:K)
 
-aic(model::MixtureRegression{K}) where {K} = 2(K - loglikelihood(model))
+aic(model::MixtureRegression{K}) where {K} = 2(K + nll(model))
