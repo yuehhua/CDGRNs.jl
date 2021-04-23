@@ -61,3 +61,10 @@ function likelihood(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVec
     normal = Normal(0, std(model))
     return pdf.(normal, residual(model, X, y))
 end
+
+function loglikelihood(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector)
+    normal = Normal(0, std(model))
+    return logpdf.(normal, residual(model, X, y))
+end
+
+nll(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector) = -loglikelihood(model, X, y)

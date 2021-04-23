@@ -26,12 +26,12 @@ function probabilistic_split(likelihoods...)
     res
 end
 
-_view(X::AbstractMatrix, clst, c) = view(X, clst .== c, :)
-_view(x::AbstractVector, clst, c) = view(x, clst .== c)
+_view(X::AbstractMatrix, idx) = view(X, idx, :)
+_view(x::AbstractVector, idx) = view(x, idx)
 
 function maximize_likelihood!(model::MixtureRegression{K}, X::AbstractVecOrMat, y::AbstractVector) where {K}
     for c = 1:K
-        X_c = _view(X, model.clusters, c)
+        X_c = _view(X, model.clusters .== c)
         y_c = view(y, model.clusters .== c)
         fit!(model.models[c], X_c, y_c)
         model.likelihoods[c] .= likelihood(model.models[c], X, y)
@@ -71,17 +71,64 @@ end
 
 random_init(k, n) = rand(collect(1:k), n)
 
-function gmm_init(k, xs, ys)
-    train = hcat(xs, ys)
+function gmm_init(k::Integer, xs::AbstractVector, y::AbstractVector)
+    train = hcat(xs, y)
 	gmm = GaussianMixtures.GMM(k, train, kind=:full)
 	ll = GaussianMixtures.llpg(gmm, train)
 	clusters = vec(map(x -> x[2], argmax(ll, dims=2)))
     return clusters
 end
 
-"""
-Negative log likelihood of a mixture model
-"""
-nll(model::MixtureRegression{K}) where {K} = sum(k -> sum(model.likelihoods[k][model.clusters .== k]), 1:K)
+function gmm_init(k::Integer, X::AbstractMatrix, y::AbstractVector)
+    train = hcat(X', y)
+	gmm = GaussianMixtures.GMM(k, train, kind=:full)
+	ll = GaussianMixtures.llpg(gmm, train)
+	clusters = vec(map(x -> x[2], argmax(ll, dims=2)))
+    return clusters
+end
 
-aic(model::MixtureRegression{K}) where {K} = 2(K + nll(model))
+predict(model::MixtureRegression{K}, X::AbstractMatrix) where {K} = [predict(model.models[k], X) for k = 1:K]
+
+_likelihood(model::MixtureRegression{K}, X::AbstractVecOrMat, y::AbstractVector) where {K} = [likelihood(model.models[k], X, y) for k = 1:K]
+
+predict_cluster(model::MixtureRegression, X::AbstractVecOrMat, y::AbstractVector) = map(hard_split, _likelihood(model, X, y)...)
+
+"""
+    loglikelihood(model)
+
+Log likelihood of a mixture model.
+
+Returns log likelihood values, which are evaluated by training data.
+"""
+loglikelihood(model::MixtureRegression{K}) where {K} = sum(k -> sum(model.likelihoods[k][model.clusters .== k]), 1:K)
+
+"""
+    loglikelihood(model, X, y)
+
+Log likelihood of a mixture model.
+
+Returns log likelihood values, which are evaluated by given data.
+"""
+function loglikelihood(model::MixtureRegression{K}, X::AbstractVecOrMat, y::AbstractVector) where {K}
+    likelihoods = _likelihood(model, X, y)
+    clusters = map(hard_split, likelihoods...)
+    sum(k -> sum(likelihoods[k][clusters .== k]), 1:K)
+end
+
+"""
+    aic(model)
+
+Akaike information criterion of a mixture model.
+
+Returns Akaike information criterion values, which are evaluated by training data.
+"""
+aic(model::MixtureRegression{K}) where {K} = 2(K - loglikelihood(model))
+
+"""
+    aic(model, X, y)
+
+Akaike information criterion of a mixture model.
+
+Returns Akaike information criterion values, which are evaluated by given data.
+"""
+aic(model::MixtureRegression{K}, X::AbstractVecOrMat, y::AbstractVector) where {K} = 2(K - loglikelihood(model, X, y))

@@ -59,8 +59,12 @@ export
     update_expectation!,
     fit!,
     fit,
-    nll,
-    aic
+    loglikelihood,
+    aic,
+    
+    # validation
+    cross_val_score,
+    grid_search
 
 
 include("distributions.jl")
@@ -71,5 +75,6 @@ include("utils.jl")
 
 include("regression.jl")
 include("mixture.jl")
+include("validation.jl")
 
 end # module
