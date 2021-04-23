@@ -156,6 +156,7 @@ p4 = plot(
 		Guide.title("Relationship of s_tf and u_targ"),
 		Guide.xlabel("log2 spliced RNA of TF gene, $(tf_vars[j, :index])"),
 		Guide.ylabel("log2 unspliced RNA of target gene, $(vars[i, :index])"),
+		Coord.cartesian(xmin=0, xmax=2.5, ymin=1.3, ymax=3.5)
 )
 
 # ╔═╡ 6d87de92-3b9d-477d-bee1-523a4d981c20
