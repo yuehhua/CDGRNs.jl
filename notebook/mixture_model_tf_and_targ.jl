@@ -130,7 +130,7 @@ p2 = plot(df, x=:logX, y=:logY, color=:Cell,
 
 # ╔═╡ 2497b33e-1713-4b5b-84bc-8e644ff85c45
 begin
-	k = 3
+	k = 4
 	model = fit(MixtureRegression{k}, df.logX, df.logY)
 	df.clusters = string.(model.clusters)
 	fs = [x -> coef(model.models[i])'*[1, x] for i = 1:k]
@@ -140,27 +140,25 @@ end
 p3 = plot(
 	 layer(fs, -4, 4),
 	 layer(df, x=:logX, y=:logY, color=:Cell, Geom.point),
-	 Guide.title("Relationship of s_tf and u_targ"),
-	 Guide.xlabel("log2 spliced RNA of TF gene, $(tf_vars[j, :index])"),
-	 Guide.ylabel("log2 unspliced RNA of target gene, $(vars[i, :index])"),
+	 Guide.xlabel("log1p spliced RNA of TF gene, $(tf_vars[j, :index])"),
+	 Guide.ylabel("log1p unspliced RNA of target gene, $(vars[i, :index])"),
 	 Coord.cartesian(xmin=0, xmax=2.5, ymin=1.3, ymax=3.5)
 )
 
 # ╔═╡ f19d5fbf-eb39-4596-9118-e5e85b787b6f
-p3 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene model", "$(tf_vars[j, :index])-$(vars[i, :index]) log plot.svg"), 12inch, 9inch)
+p3 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene model", "$(tf_vars[j, :index])-$(vars[i, :index]) log plot.svg"), 8inch, 6inch)
 
 # ╔═╡ 81e445de-d4f8-4c83-984c-1ebfc53f9f85
 p4 = plot(
 		layer(fs, -4, 4),
 		layer(df, x=:logX, y=:logY, color=:clusters, Geom.point),
-		Guide.title("Relationship of s_tf and u_targ"),
-		Guide.xlabel("log2 spliced RNA of TF gene, $(tf_vars[j, :index])"),
-		Guide.ylabel("log2 unspliced RNA of target gene, $(vars[i, :index])"),
+		Guide.xlabel("log1p spliced RNA of TF gene, $(tf_vars[j, :index])"),
+		Guide.ylabel("log1p unspliced RNA of target gene, $(vars[i, :index])"),
 		Coord.cartesian(xmin=0, xmax=2.5, ymin=1.3, ymax=3.5)
 )
 
 # ╔═╡ 6d87de92-3b9d-477d-bee1-523a4d981c20
-p4 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene model", "$(tf_vars[j, :index])-$(vars[i, :index]) log plot-predict.svg"), 12inch, 9inch)
+p4 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene model", "$(tf_vars[j, :index])-$(vars[i, :index]) log plot-predict.svg"), 8inch, 6inch)
 
 # ╔═╡ Cell order:
 # ╟─6e36a6d2-86d2-11eb-210a-b5589313a599

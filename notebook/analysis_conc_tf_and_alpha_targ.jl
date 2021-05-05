@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.1
+# v0.14.3
 
 using Markdown
 using InteractiveUtils
@@ -102,13 +102,26 @@ end
 # ╔═╡ a1846552-7295-11eb-37df-95e5ebb08910
 md"## Phase diagram"
 
+# ╔═╡ 7560ae95-dea3-493e-9457-c393ea4652e3
+vars.index
+
 # ╔═╡ 980807ca-72ba-11eb-0347-f744ea81b3f7
 begin
-	# gene_name = "Pcsk2"
-	# gene_name = "Ank"
-	gene_name = "Rps3"
-	# gene_name = "Gng12"
-	i = collect(1:nrow(vars))[vars.index .== gene_name][1]
+	# gene_name = "Rps3"  # good
+	# Regulation of beta-cell development SuperPath
+	# gene_name = "MNX1"  # bad
+	# gene_name = "NEUROD1"  # bad
+	# gene_name = "NKX2-2"  # good
+	# gene_name = "HNF1B"  # bad
+	# gene_name = "NR5A2"  # fair
+	# gene_name = "GCK"  # fair
+	# gene_name = "FOXA3"  # bad
+	# gene_name = "PAX4"  # bad
+	gene_name = "PAX6"  # good
+	# gene_name = "RFX6"  # fair
+	# gene_name = "FOXO1"  # good
+	# gene_name = "RBPJ"  # bad
+	i = collect(1:nrow(vars))[uppercase.(vars.index) .== gene_name][1]
 end
 
 # ╔═╡ ba3aff2a-7295-11eb-08ee-973a494d528e
@@ -117,39 +130,6 @@ md"#### Number of nonzero spliced RNA expression: $(count(s[i, :] .!= 0)) / $(si
 # ╔═╡ 0be5761e-7293-11eb-3140-a37320cf1784
 plot(x=s[i, :], y=u[i, :], color=prof.obs.clusters,
 	 Geom.point, Guide.title("$(vars[i, :index]) phase diagram"),
-	 Guide.xlabel("Spliced RNA"), Guide.ylabel("Unspliced RNA"),
-)
-
-# ╔═╡ 4bd41860-7b27-11eb-0a5d-bb7d96f2493a
-plot(x=u[i, :], color=prof.obs.clusters,
-	 Geom.histogram,
-	 Guide.xlabel("Unspliced RNA"),
-)
-
-# ╔═╡ bfd61bba-7b26-11eb-1850-350f284b6287
-md"## Phase portrait curve"
-
-# ╔═╡ d6365c1a-7b28-11eb-3081-69d9f6d06d21
-begin
-	α = vars[vars.index .== gene_name, :fit_alpha][1]
-	β = vars[vars.index .== gene_name, :fit_beta][1]
-	γ = vars[vars.index .== gene_name, :fit_gamma][1]
-	u₀ = vars[vars.index .== gene_name, :fit_u0][1]
-	s₀ = vars[vars.index .== gene_name, :fit_s0][1]
-end
-
-# ╔═╡ 4b94e676-7b32-11eb-0591-c102c1ceccef
-begin
-	df = DataFrame(X=s[i, :], Y=u[i, :], Cell=prof.obs.clusters)
-	simulate = DataFrame(τ=collect(0:0.1:100))
-	simulate.u = map(τ -> SnowyOwl.unspliced(τ, u₀, α, β), simulate.τ)
-	simulate.s = map(τ -> SnowyOwl.spliced(τ, s₀, u₀, α, β, γ), simulate.τ)
-end;
-
-# ╔═╡ e8696496-7b31-11eb-112a-cf977d01a9fa
-plot(layer(simulate, x=:s, y=:u, Geom.line),
-	 layer(df, x=:X, y=:Y, color=:Cell, Geom.point),
-	 Guide.title("$(vars[i, :index]) phase diagram"),
 	 Guide.xlabel("Spliced RNA"), Guide.ylabel("Unspliced RNA"),
 )
 
@@ -166,104 +146,23 @@ j = 8
 p1 = plot(x=tf_s[j, :],
 	 y=u[i, :], 
 	 color=prof.obs.clusters,
-	 Geom.point, Guide.title("Relationship of s_tf and u_targ"),
 	 Guide.xlabel("Spliced RNA of TF gene, $(tf_vars[j, :index])"),
 	 Guide.ylabel("Unspliced RNA of target gene, $(vars[i, :index])"),
 )
 
 # ╔═╡ 0774c424-8abf-11eb-066d-9b719d3ad3e1
-p1 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene", "$(tf_vars[j, :index])-$(vars[i, :index]) plot.svg"), 12inch, 9inch)
+p1 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene", "$(tf_vars[j, :index])-$(vars[i, :index]) plot.svg"), 8inch, 6inch)
 
 # ╔═╡ 0c155df8-72c6-11eb-2299-5bf61dd3c4cd
-p2 = plot(x=tf_s[j, :], Scale.x_log2(),
-	 y=u[i, :], Scale.y_log2(),
+p2 = plot(x=log1p.(tf_s[j, :]),
+	 y=log1p.(u[i, :]),
 	 color=prof.obs.clusters,
-	 Geom.point, Guide.title("Relationship of s_tf and u_targ"),
-	 Guide.xlabel("log2 spliced RNA of TF gene, $(tf_vars[j, :index])"),
-	 Guide.ylabel("log2 unspliced RNA of target gene, $(vars[i, :index])"),
+	 Guide.xlabel("log1p spliced RNA of TF gene, $(tf_vars[j, :index])"),
+	 Guide.ylabel("log1p unspliced RNA of target gene, $(vars[i, :index])"),
 )
 
 # ╔═╡ 11cc0f40-8abf-11eb-38f9-6b180a27e150
-p2 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene", "$(tf_vars[j, :index])-$(vars[i, :index]) log plot.svg"), 12inch, 9inch)
-
-# ╔═╡ 1f9fb237-3a5f-4d8a-a471-abb4da4bb3fd
-begin
-	df2 = DataFrame(X=tf_s[j, :], Y=u[i, :])
-	df2.logX = log2.(df2.X)
-	df2.logY = log2.(df2.Y)
-	df2.cluster = prof.obs.clusters
-	model = fit(MixtureRegression{4}, Matrix(df2.logX'), df2.logY, max_iter=50)
-end;
-
-# ╔═╡ 2f003762-d47a-472a-9301-4586c4292a5c
-begin
-	fs = [x -> coef(model.models[1])'*[1, x], x -> coef(model.models[2])'*[1, x],
-		  x -> coef(model.models[3])'*[1, x], x -> coef(model.models[4])'*[1, x]]
-	p3 = plot(
-		 layer(fs, -4, 4),
-		 layer(df2, x=:logX, y=:logY, color=:cluster, Geom.point),
-		 Guide.title("Relationship of s_tf and u_targ"),
-		 Guide.xlabel("log2 spliced RNA of TF gene, $(tf_vars[j, :index])"),
-		 Guide.ylabel("log2 unspliced RNA of target gene, $(vars[i, :index])"),
-		 Coord.cartesian(xmin=-4.8, xmax=3.5, ymin=1.5, ymax=4.9)
-	)
-end
-
-# ╔═╡ f1e0c594-6aae-4351-93d7-d09dd3004e56
-p3 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene", "mixture model $(tf_vars[j, :index])-$(vars[i, :index]) log plot.svg"), 12inch, 9inch)
-
-# ╔═╡ f19d5fbf-eb39-4596-9118-e5e85b787b6f
-begin
-	import Cairo
-	p3 |> PNG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene", "mixture model $(tf_vars[j, :index])-$(vars[i, :index]) log plot.png"), 12inch, 9inch)
-end
-
-# ╔═╡ 3ac387b5-838f-4fcd-87da-81cebee2a4b5
-p4 = plot(
-	 layer(fs, -4, 4),
-	 layer(df2, x=:logX, y=:logY, color=string.(model.clusters), Geom.point),
-	 Guide.title("Relationship of s_tf and u_targ"),
-	 Guide.xlabel("log2 spliced RNA of TF gene, $(tf_vars[j, :index])"),
-	 Guide.ylabel("log2 unspliced RNA of target gene, $(vars[i, :index])"),
-	 Coord.cartesian(xmin=-4.8, xmax=3.5, ymin=1.5, ymax=4.9)
-)
-
-# ╔═╡ ca459f0d-48fb-4613-a414-451d1d07dff3
-p4 |> PNG(joinpath(GRN.PROJECT_PATH, "pics", "mixture model log plot.png"), 12inch, 9inch)
-
-# ╔═╡ 26f9c05d-2005-44e4-8fae-fbe2840fcc66
-begin
-	function to_clst(x)
-		if x in ["Pre-endocrine", "Ngn3 high EP", "Epsilon"]
-			return 1
-		elseif x in ["Ductal", "Ngn3 low EP"]
-			return 2
-		elseif x in ["Alpha", "Delta"]
-			return 3
-		elseif x == "Beta"
-			return 4
-		end
-	end
-	init_clst = map(to_clst, df2.cluster)
-	model2 = fit(MixtureRegression{4}, Matrix(df2.logX'), df2.logY, max_iter=10, init_clusters=init_clst)
-end
-
-# ╔═╡ 7d67320f-7eb7-475f-8ede-515553d2dda4
-begin
-	fs2 = [x -> coef(model2.models[1])'*[1, x], x -> coef(model2.models[2])'*[1, x],
-		  x -> coef(model2.models[3])'*[1, x], x -> coef(model2.models[4])'*[1, x]]
-	p5 = plot(
-		 layer(fs2, -4, 4),
-		 layer(df2, x=:logX, y=:logY, color=string.(model2.clusters), Geom.point),
-		 Guide.title("Relationship of s_tf and u_targ"),
-		 Guide.xlabel("log2 spliced RNA of TF gene, $(tf_vars[j, :index])"),
-		 Guide.ylabel("log2 unspliced RNA of target gene, $(vars[i, :index])"),
-		 Coord.cartesian(xmin=-4.8, xmax=3.5, ymin=1.5, ymax=4.9)
-	)
-end
-
-# ╔═╡ c0b18aab-808e-4a59-8149-0143956ee0ad
-p5 |> PNG(joinpath(GRN.PROJECT_PATH, "pics", "mixture model log plot-manual init.png"), 12inch, 9inch)
+p2 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene", "$(tf_vars[j, :index])-$(vars[i, :index]) log plot.svg"), 8inch, 6inch)
 
 # ╔═╡ Cell order:
 # ╟─6e36a6d2-86d2-11eb-210a-b5589313a599
@@ -281,14 +180,10 @@ p5 |> PNG(joinpath(GRN.PROJECT_PATH, "pics", "mixture model log plot-manual init
 # ╠═8415622a-728e-11eb-0b5c-eb0412e77da8
 # ╠═f97f2b40-7293-11eb-3137-05e11185f7b3
 # ╟─a1846552-7295-11eb-37df-95e5ebb08910
+# ╠═7560ae95-dea3-493e-9457-c393ea4652e3
 # ╠═980807ca-72ba-11eb-0347-f744ea81b3f7
 # ╟─ba3aff2a-7295-11eb-08ee-973a494d528e
 # ╠═0be5761e-7293-11eb-3140-a37320cf1784
-# ╠═4bd41860-7b27-11eb-0a5d-bb7d96f2493a
-# ╟─bfd61bba-7b26-11eb-1850-350f284b6287
-# ╠═d6365c1a-7b28-11eb-3081-69d9f6d06d21
-# ╠═4b94e676-7b32-11eb-0591-c102c1ceccef
-# ╠═e8696496-7b31-11eb-112a-cf977d01a9fa
 # ╟─479ca4b2-7285-11eb-1ae4-1f7f14720b86
 # ╠═252009ac-8abf-11eb-2d8a-e375e0b46ec1
 # ╠═7fd240e8-72c5-11eb-25b9-59198fb66347
@@ -296,12 +191,3 @@ p5 |> PNG(joinpath(GRN.PROJECT_PATH, "pics", "mixture model log plot-manual init
 # ╠═0774c424-8abf-11eb-066d-9b719d3ad3e1
 # ╠═0c155df8-72c6-11eb-2299-5bf61dd3c4cd
 # ╠═11cc0f40-8abf-11eb-38f9-6b180a27e150
-# ╠═1f9fb237-3a5f-4d8a-a471-abb4da4bb3fd
-# ╠═2f003762-d47a-472a-9301-4586c4292a5c
-# ╠═f1e0c594-6aae-4351-93d7-d09dd3004e56
-# ╠═f19d5fbf-eb39-4596-9118-e5e85b787b6f
-# ╠═3ac387b5-838f-4fcd-87da-81cebee2a4b5
-# ╠═ca459f0d-48fb-4613-a414-451d1d07dff3
-# ╠═26f9c05d-2005-44e4-8fae-fbe2840fcc66
-# ╠═7d67320f-7eb7-475f-8ede-515553d2dda4
-# ╠═c0b18aab-808e-4a59-8149-0143956ee0ad

@@ -70,6 +70,6 @@ df = DataFrame(X=tf_s[j, :], Y=u[i, :])
 df.logX = log1p.(df.X)
 df.logY = log1p.(df.Y)
 
-k_range = 2:5
+k_range = 2:10
 cv = 5
-best_k = grid_search(MixtureRegression, df.logX, df.logY, k_range, cv=cv)
+best_k = grid_search(MixtureRegression, df.logX, df.logY, k_range, cv=cv, verbosity=2)
