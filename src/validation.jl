@@ -10,12 +10,12 @@ function cross_val_score(reg::Type{MixtureRegression{K}}, X::AbstractVecOrMat, y
     return scores
 end
 
-function grid_search(reg::Type{MixtureRegression}, X::AbstractVecOrMat, y::AbstractVector{T}, k_range; cv=5, verbosity::Integer=0) where {K,T}
+function grid_search(reg::Type{MixtureRegression}, X::AbstractVecOrMat, y::AbstractVector{T}, k_range; cv=5, verbosity::Integer=0) where {T}
     mean_scores = T[]
     for k = k_range
-        verbosity > 1 && @info "With k = $k"
         scores = cross_val_score(MixtureRegression{k}, X, y; cv=cv)
         ms = mean(scores)
+        verbosity > 1 && @info "With k = $k"
         verbosity > 1 && @info "CV scores: $ms ($scores)"
         push!(mean_scores, ms)
     end

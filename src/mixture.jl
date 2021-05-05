@@ -13,6 +13,8 @@ struct MixtureRegression{K,R,T<:Integer,S}
     end
 end
 
+ncoef(model::MixtureRegression) = sum(x -> length(x.β), model.models)
+
 hard_split(likelihoods...) = argmax.(zip(likelihoods...))
 
 function probabilistic_split(likelihoods...)
@@ -100,7 +102,10 @@ Log likelihood of a mixture model.
 
 Returns log likelihood values, which are evaluated by training data.
 """
-loglikelihood(model::MixtureRegression{K}) where {K} = sum(k -> sum(model.likelihoods[k][model.clusters .== k]), 1:K)
+function loglikelihood(model::MixtureRegression{K}; average::Bool=false) where {K}
+    ll = sum(k -> sum(log.(model.likelihoods[k][model.clusters .== k])), 1:K)
+    return average ? ll/length(model.clusters) : ll
+end
 
 """
     loglikelihood(model, X, y)
@@ -109,10 +114,11 @@ Log likelihood of a mixture model.
 
 Returns log likelihood values, which are evaluated by given data.
 """
-function loglikelihood(model::MixtureRegression{K}, X::AbstractVecOrMat, y::AbstractVector) where {K}
+function loglikelihood(model::MixtureRegression{K}, X::AbstractVecOrMat, y::AbstractVector; average::Bool=false) where {K}
     likelihoods = _likelihood(model, X, y)
     clusters = map(hard_split, likelihoods...)
-    sum(k -> sum(likelihoods[k][clusters .== k]), 1:K)
+    ll = sum(k -> sum(log.(likelihoods[k][clusters .== k])), 1:K)
+    return average ? ll/length(y) : ll
 end
 
 """
@@ -122,7 +128,7 @@ Akaike information criterion of a mixture model.
 
 Returns Akaike information criterion values, which are evaluated by training data.
 """
-aic(model::MixtureRegression{K}) where {K} = 2(K - loglikelihood(model))
+aic(model::MixtureRegression) = 2(ncoef(model) - loglikelihood(model))
 
 """
     aic(model, X, y)
@@ -131,4 +137,7 @@ Akaike information criterion of a mixture model.
 
 Returns Akaike information criterion values, which are evaluated by given data.
 """
-aic(model::MixtureRegression{K}, X::AbstractVecOrMat, y::AbstractVector) where {K} = 2(K - loglikelihood(model, X, y))
+aic(model::MixtureRegression, X::AbstractVecOrMat, y::AbstractVector) = 2(ncoef(model) - loglikelihood(model, X, y))
+
+bic(model::MixtureRegression) = ncoef(model)*log(length(y)) - 2*loglikelihood(model)
+bic(model::MixtureRegression, X::AbstractVecOrMat, y::AbstractVector) = ncoef(model)*log(length(y)) - 2*loglikelihood(model, X, y)

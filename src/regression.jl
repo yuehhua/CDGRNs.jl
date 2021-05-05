@@ -16,6 +16,18 @@ coef(model::LinearRegression) = model.β
 std(model::LinearRegression) = model.σ
 stderror(model::LinearRegression) = model.se
 
+# function dof(model::LinearRegression; kind=:regression)
+#     if kind == :regression
+#         return
+#     elseif kind == :residual
+#         return 
+#     elseif kind == :total
+#         return length(coef(model)) - 1
+#     else
+#         throw(ArgumentError("only :regression, :residual and :total available for `kind`."))
+#     end
+# end
+
 # X ∈ (obs × feat)
 design_matrix(x::AbstractVector{T}) where {T} = hcat(ones(T, length(x)), x)
 design_matrix(X::AbstractMatrix{T}) where {T} = hcat(ones(T, size(X, 1)), X)
@@ -31,7 +43,7 @@ function fit!(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector{T}
     D = design_matrix(X)
     model.β = inv(D'*D) * D'*y
     r = residual(model, X, y)
-    model.σ = sqrt(r'*r / length(r))
+    model.σ = sqrt(r'*r / (length(r)-length(model.β)))
     # se of slopes
     n = length(y)
     X̄ = mean(X, dims=1)

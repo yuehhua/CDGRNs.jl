@@ -61,6 +61,7 @@ export
     fit,
     loglikelihood,
     aic,
+    bic,
     
     # validation
     cross_val_score,
