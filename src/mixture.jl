@@ -1,6 +1,4 @@
-using Distributions
 using GLM
-using StatsBase
 using GaussianMixtures
 
 struct MixtureRegression{K,R,T<:Integer,S}
@@ -13,7 +11,7 @@ struct MixtureRegression{K,R,T<:Integer,S}
     end
 end
 
-ncoef(model::MixtureRegression) = sum(x -> length(x.β), model.models)
+ncoef(model::MixtureRegression) = sum(ncoef, model.models)
 
 hard_split(likelihoods...) = argmax.(zip(likelihoods...))
 
@@ -121,6 +119,16 @@ function loglikelihood(model::MixtureRegression{K}, X::AbstractVecOrMat, y::Abst
     return average ? ll/length(y) : ll
 end
 
+function MSE(model::MixtureRegression{K}, X::AbstractVecOrMat, y::AbstractVector{T}) where {K,T}
+    clst = predict_cluster(model, X, y)
+    total_sse = zero(T)
+    for k = 1:K
+        m = model.models[k]
+        total_sse += SSE(m, _view(X, clst .== k), view(y, clst .== k))
+    end
+    return total_sse / length(y)
+end
+
 """
     aic(model)
 
@@ -128,7 +136,7 @@ Akaike information criterion of a mixture model.
 
 Returns Akaike information criterion values, which are evaluated by training data.
 """
-aic(model::MixtureRegression) = 2(ncoef(model) - loglikelihood(model))
+aic(model::MixtureRegression; λ=2e-2) = 2(ncoef(model) - loglikelihood(model))
 
 """
     aic(model, X, y)
@@ -137,7 +145,17 @@ Akaike information criterion of a mixture model.
 
 Returns Akaike information criterion values, which are evaluated by given data.
 """
-aic(model::MixtureRegression, X::AbstractVecOrMat, y::AbstractVector) = 2(ncoef(model) - loglikelihood(model, X, y))
+function aic(model::MixtureRegression, X::AbstractVecOrMat, y::AbstractVector; λ=2e-2, kind=:likelihood)
+    k = ncoef(model)
+    n = length(y)
+    if kind == :likelihood
+        return 2(ncoef(model) - λ*loglikelihood(model, X, y))
+    elseif kind == :mse
+        return 2k + n*log(MSE(model, X, y))
+    else
+        throw(ArgumentError("only :likelihood and :mse available for `kind`."))
+    end
+end
 
-bic(model::MixtureRegression) = ncoef(model)*log(length(y)) - 2*loglikelihood(model)
-bic(model::MixtureRegression, X::AbstractVecOrMat, y::AbstractVector) = ncoef(model)*log(length(y)) - 2*loglikelihood(model, X, y)
+bic(model::MixtureRegression; λ=2e-2) = ncoef(model)*log(length(y)) - 2λ*loglikelihood(model)
+bic(model::MixtureRegression, X::AbstractVecOrMat, y::AbstractVector; λ=2e-2) = ncoef(model)*log(length(y)) - 2λ*loglikelihood(model, X, y)
