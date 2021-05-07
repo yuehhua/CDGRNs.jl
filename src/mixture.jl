@@ -61,20 +61,20 @@ end
 
 function fit(::Type{MixtureRegression{K}}, X::AbstractVecOrMat, y::AbstractVector{T};
              max_iter::Integer=5, init=()->gmm_init(K, X, y)) where {K,T<:Real}
-    # if K == 1
-    #     models = [fit(LinearRegression, X, y)]
-    #     clusters = ones(T, size(y))
-    #     likelihoods = [likelihood(models[1], X, y)]
-    #     model = MixtureRegression{K}(models, clusters, likelihoods)
-    #     return model
-    # else
-        n = length(y)
+    n = length(y)
+    if K == 1
+        models = [fit(LinearRegression, X, y)]
+        clusters = ones(Int64, n)
+        likelihoods = [likelihood(models[1], X, y)]
+        model = MixtureRegression{K}(models, clusters, likelihoods)
+        return model
+    else
         models = [LinearRegression(size(X, 2)) for i = 1:K]
         init_clusters = init()
         init_likelihoods = [Vector{T}(undef, n) for i = 1:K]
         model = MixtureRegression{K}(models, init_clusters, init_likelihoods)
         return fit!(model, X, y; max_iter=max_iter)
-    # end
+    end
 end
 
 random_init(k, n) = rand(collect(1:k), n)
