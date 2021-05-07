@@ -66,7 +66,7 @@ export
     bic,
     
     # validation
-    cross_val_score,
+    validate_score,
     grid_search
 
 
@@ -78,6 +78,7 @@ include("utils.jl")
 
 include("regression.jl")
 include("mixture.jl")
+include("metrics.jl")
 include("validation.jl")
 
 end # module

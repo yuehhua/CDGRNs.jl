@@ -61,12 +61,20 @@ end
 
 function fit(::Type{MixtureRegression{K}}, X::AbstractVecOrMat, y::AbstractVector{T};
              max_iter::Integer=5, init=()->gmm_init(K, X, y)) where {K,T<:Real}
-    n = length(y)
-    models = [LinearRegression(size(X, 2)) for i = 1:K]
-    init_clusters = init()
-    init_likelihoods = [Vector{T}(undef, n) for i = 1:K]
-    model = MixtureRegression{K}(models, init_clusters, init_likelihoods)
-    return fit!(model, X, y; max_iter=max_iter)
+    # if K == 1
+    #     models = [fit(LinearRegression, X, y)]
+    #     clusters = ones(T, size(y))
+    #     likelihoods = [likelihood(models[1], X, y)]
+    #     model = MixtureRegression{K}(models, clusters, likelihoods)
+    #     return model
+    # else
+        n = length(y)
+        models = [LinearRegression(size(X, 2)) for i = 1:K]
+        init_clusters = init()
+        init_likelihoods = [Vector{T}(undef, n) for i = 1:K]
+        model = MixtureRegression{K}(models, init_clusters, init_likelihoods)
+        return fit!(model, X, y; max_iter=max_iter)
+    # end
 end
 
 random_init(k, n) = rand(collect(1:k), n)
@@ -92,70 +100,3 @@ predict(model::MixtureRegression{K}, X::AbstractMatrix) where {K} = [predict(mod
 _likelihood(model::MixtureRegression{K}, X::AbstractVecOrMat, y::AbstractVector) where {K} = [likelihood(model.models[k], X, y) for k = 1:K]
 
 predict_cluster(model::MixtureRegression, X::AbstractVecOrMat, y::AbstractVector) = map(hard_split, _likelihood(model, X, y)...)
-
-"""
-    loglikelihood(model)
-
-Log likelihood of a mixture model.
-
-Returns log likelihood values, which are evaluated by training data.
-"""
-function loglikelihood(model::MixtureRegression{K}; average::Bool=false) where {K}
-    ll = sum(k -> sum(log.(model.likelihoods[k][model.clusters .== k])), 1:K)
-    return average ? ll/length(model.clusters) : ll
-end
-
-"""
-    loglikelihood(model, X, y)
-
-Log likelihood of a mixture model.
-
-Returns log likelihood values, which are evaluated by given data.
-"""
-function loglikelihood(model::MixtureRegression{K}, X::AbstractVecOrMat, y::AbstractVector; average::Bool=false) where {K}
-    likelihoods = _likelihood(model, X, y)
-    clusters = map(hard_split, likelihoods...)
-    ll = sum(k -> sum(log.(likelihoods[k][clusters .== k])), 1:K)
-    return average ? ll/length(y) : ll
-end
-
-function MSE(model::MixtureRegression{K}, X::AbstractVecOrMat, y::AbstractVector{T}) where {K,T}
-    clst = predict_cluster(model, X, y)
-    total_sse = zero(T)
-    for k = 1:K
-        m = model.models[k]
-        total_sse += SSE(m, _view(X, clst .== k), view(y, clst .== k))
-    end
-    return total_sse / length(y)
-end
-
-"""
-    aic(model)
-
-Akaike information criterion of a mixture model.
-
-Returns Akaike information criterion values, which are evaluated by training data.
-"""
-aic(model::MixtureRegression; λ=2e-2) = 2(ncoef(model) - loglikelihood(model))
-
-"""
-    aic(model, X, y)
-
-Akaike information criterion of a mixture model.
-
-Returns Akaike information criterion values, which are evaluated by given data.
-"""
-function aic(model::MixtureRegression, X::AbstractVecOrMat, y::AbstractVector; λ=2e-2, kind=:likelihood)
-    k = ncoef(model)
-    n = length(y)
-    if kind == :likelihood
-        return 2(ncoef(model) - λ*loglikelihood(model, X, y))
-    elseif kind == :mse
-        return 2k + n*log(MSE(model, X, y))
-    else
-        throw(ArgumentError("only :likelihood and :mse available for `kind`."))
-    end
-end
-
-bic(model::MixtureRegression; λ=2e-2) = ncoef(model)*log(length(y)) - 2λ*loglikelihood(model)
-bic(model::MixtureRegression, X::AbstractVecOrMat, y::AbstractVector; λ=2e-2) = ncoef(model)*log(length(y)) - 2λ*loglikelihood(model, X, y)

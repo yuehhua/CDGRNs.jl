@@ -37,12 +37,6 @@ predict(model::LinearRegression, X::AbstractVecOrMat) = design_matrix(X)*model.Î
 
 residual(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector) = y - predict(model, X)
 
-SSE(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector) = residual(model, X, y)'*residual(model, X, y)
-function MSE(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector; corrected=false)
-    sse = SSE(model, X, y)
-    return corrected ? sse / dof(model, kind=:residual) : sse / nobs(model)
-end
-
 function fit!(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector{T}) where {T}
     model.n = length(y)
     D = design_matrix(X)
@@ -72,15 +66,3 @@ function fit(::Type{LinearRegression}, X::AbstractMatrix, y::AbstractVector)
     model = LinearRegression(size(X, 2))
     fit!(model, X, y)
 end
-
-function likelihood(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector)
-    normal = Normal(0, std(model))
-    return pdf.(normal, residual(model, X, y))
-end
-
-function loglikelihood(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector)
-    normal = Normal(0, std(model))
-    return logpdf.(normal, residual(model, X, y))
-end
-
-nll(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector) = -loglikelihood(model, X, y)
