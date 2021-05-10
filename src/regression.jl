@@ -1,20 +1,44 @@
-using LinearAlgebra
-using Distributions
 using Statistics
 
 import Statistics: std
 
-mutable struct LinearRegression{T<:Real,V<:AbstractVector}
+abstract type AbstractRegression end
+struct NullRegression <: AbstractRegression end
+
+mutable struct LinearRegression{T<:Real,V<:AbstractVector} <: AbstractRegression
     β::V
     σ::T
     se::V
+    n::Integer
 end
 
-LinearRegression(d::Integer) = LinearRegression(rand(d+1), rand(), rand(d+1))
+LinearRegression(d::Integer) = LinearRegression(rand(d+1), rand(), rand(d+1), 0)
 
+coef(::NullRegression) = []
 coef(model::LinearRegression) = model.β
+
+std(::NullRegression) = model.σ
 std(model::LinearRegression) = model.σ
+
 stderror(model::LinearRegression) = model.se
+
+ncoef(::NullRegression) = 0
+ncoef(model::LinearRegression) = length(model.β)
+
+nobs(::NullRegression) = 0
+nobs(model::LinearRegression) = model.n
+
+function dof(model::AbstractRegression; kind=:regression)
+    if kind == :regression
+        return ncoef(model) - 1
+    elseif kind == :residual
+        return nobs(model) - ncoef(model)
+    elseif kind == :total
+        return nobs(model) - 1
+    else
+        throw(ArgumentError("only :regression, :residual and :total available for `kind`."))
+    end
+end
 
 # X ∈ (obs × feat)
 design_matrix(x::AbstractVector{T}) where {T} = hcat(ones(T, length(x)), x)
@@ -24,20 +48,26 @@ predict(model::LinearRegression, X::AbstractVecOrMat) = design_matrix(X)*model.�
 
 residual(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector) = y - predict(model, X)
 
-SSE(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector) = residual(model, X, y)'*residual(model, X, y)
-MSE(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector) = SSE(model, X, y) / (length(y) - 2)
-
 function fit!(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector{T}) where {T}
+    model.n = length(y)
     D = design_matrix(X)
-    model.β = inv(D'*D) * D'*y
-    r = residual(model, X, y)
-    model.σ = sqrt(r'*r / length(r))
+    try
+        inv_D = inv(D'*D)
+    catch e
+        if e isa LinearAlgebra.LAPACKException
+            @warn "LAPACKException is captured."
+        end
+    finally
+        return NullRegression()
+    end
+    model.β = inv_D * D'*y
+    mse = MSE(model, X, y, corrected=true)
+    model.σ = sqrt(mse * dof(model, kind=:residual) / nobs(model))
     # se of slopes
     n = length(y)
     X̄ = mean(X, dims=1)
     ϵₓ = X .- X̄
     SS = sum(x -> x.^2, ϵₓ, dims=1)
-    mse = MSE(model, X, y)
     se_slope = sqrt.(mse ./ vec(SS))
     # se of intercept
     X̄ = [one(T), (X̄.^2)...]
@@ -55,9 +85,4 @@ end
 function fit(::Type{LinearRegression}, X::AbstractMatrix, y::AbstractVector)
     model = LinearRegression(size(X, 2))
     fit!(model, X, y)
-end
-
-function likelihood(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector)
-    normal = Normal(0, std(model))
-    return pdf.(normal, residual(model, X, y))
 end

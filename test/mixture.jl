@@ -35,6 +35,5 @@ using GLM
     @test check_confint(model.models[2].β, stderror(model.models[2]), GLM.coef(model1_true)) | 
         check_confint(model.models[2].β, stderror(model.models[2]), GLM.coef(model2_true))
     
-    @test nll(model) > 0
     @test aic(model) > 0
 end

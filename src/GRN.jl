@@ -8,8 +8,10 @@ using LightGraphs: SimpleDiGraph, add_edge!
 using Missings
 using SnowyOwl
 using SparseArrays
+using StatsBase
 
-import GLM: fit, predict, coef, stderror, loglikelihood
+import GLM: fit, predict, coef, stderror, loglikelihood, dof, nobs
+import StatsBase: dof, nobs, fit!
 
 const PROJECT_PATH = dirname(@__DIR__)
 
@@ -59,8 +61,13 @@ export
     update_expectation!,
     fit!,
     fit,
-    nll,
-    aic
+    loglikelihood,
+    aic,
+    bic,
+    
+    # validation
+    validate_score,
+    grid_search
 
 
 include("distributions.jl")
@@ -71,5 +78,7 @@ include("utils.jl")
 
 include("regression.jl")
 include("mixture.jl")
+include("metrics.jl")
+include("validation.jl")
 
 end # module
