@@ -23,6 +23,7 @@ select_hyperparams(scores, ::typeof(aic)) = argmin(scores)
 select_hyperparams(scores, ::typeof(bic)) = argmin(scores)
 select_hyperparams(scores, ::typeof(likelihood)) = argmax(scores)
 select_hyperparams(scores, ::typeof(loglikelihood)) = argmax(scores)
+select_hyperparams(scores, ::typeof(nll)) = argmin(scores)
 
 function grid_search(reg::Type{MixtureRegression}, X::AbstractVecOrMat, y::AbstractVector{T}, k_range;
                      cv=0, λ=2e-2, criterion=aic, best_model=false, return_score=false, verbosity::Integer=0) where {T}

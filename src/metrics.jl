@@ -1,6 +1,8 @@
+SSE(::NullRegression, X::AbstractVecOrMat, y::AbstractVector{T}) where {T} = typemax(float(T))
 SSE(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector) = residual(model, X, y)'*residual(model, X, y)
 
 
+MSE(::NullRegression, X::AbstractVecOrMat, y::AbstractVector{T}) where {T} = typemax(float(T))
 function MSE(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector; corrected=false)
     sse = SSE(model, X, y)
     return corrected ? sse / dof(model, kind=:residual) : sse / nobs(model)
@@ -17,6 +19,7 @@ function MSE(model::MixtureRegression{K}, X::AbstractVecOrMat, y::AbstractVector
 end
 
 
+likelihood(::NullRegression, X::AbstractVecOrMat, y::AbstractVector{T}) where {T} = zero(float(T))
 function likelihood(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector)
     normal = Normal(0, std(model))
     return pdf.(normal, residual(model, X, y))
@@ -31,21 +34,29 @@ Log likelihood of a model.
 
 Returns log likelihood values. If X, y are not given, log likelihood is evaluated by training data.
 """
-function loglikelihood(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector)
+loglikelihood(::NullRegression; average::Bool=false) = -Inf
+loglikelihood(::NullRegression, X::AbstractVecOrMat, y::AbstractVector{T}; average::Bool=false) where {T} = typemin(float(T))
+function loglikelihood(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector; average::Bool=false)
     normal = Normal(0, std(model))
-    return logpdf.(normal, residual(model, X, y))
+    lls = logpdf.(normal, residual(model, X, y))
+    return average ? mean(lls) : sum(lls)
 end
 
-function loglikelihood(model::MixtureRegression{K}; average::Bool=false) where {K}
-    ll = sum(k -> sum(log.(model.likelihoods[k][model.clusters .== k])), 1:K)
-    return average ? ll/length(model.clusters) : ll
-end
+loglikelihood(model::MixtureRegression{K}; average::Bool=false) where {K} = _loglikelihood(model.likelihoods, model.clusters, K, average)
 
 function loglikelihood(model::MixtureRegression{K}, X::AbstractVecOrMat, y::AbstractVector; average::Bool=false) where {K}
     likelihoods = _likelihood(model, X, y)
     clusters = map(hard_split, likelihoods...)
-    ll = sum(k -> sum(log.(likelihoods[k][clusters .== k])), 1:K)
-    return average ? ll/length(y) : ll
+    return _loglikelihood(likelihoods, clusters, K, average)
+end
+
+function _loglikelihood(ls, clusters, K, avg)
+    ll = if K == 1
+        sum(log.(ls[1]))
+    else
+        sum(k -> sum(log.(ls[k][clusters .== k])), 1:K)
+    end
+    return avg ? ll/length(clusters) : ll
 end
 
 
@@ -56,7 +67,7 @@ Negative log likelihood for a model.
 
 Returns negative log likelihood for a linear regression model, which are evaluated by data.
 """
-nll(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector) = -loglikelihood(model, X, y)
+nll(model::AbstractRegression, X::AbstractVecOrMat, y::AbstractVector) = -loglikelihood(model, X, y)
 
 
 """
@@ -67,8 +78,8 @@ Akaike information criterion of a mixture model.
 
 Returns Akaike information criterion values. If X, y are not given, AIC is evaluated by training data.
 """
-aic(model::MixtureRegression; λ=2e-2) = 2(ncoef(model) - λ*loglikelihood(model))
-function aic(model::MixtureRegression, X::AbstractVecOrMat, y::AbstractVector; λ=2e-2, kind=:likelihood)
+aic(model::AbstractRegression; λ=2e-2) = 2(ncoef(model) - λ*loglikelihood(model))
+function aic(model::AbstractRegression, X::AbstractVecOrMat, y::AbstractVector; λ=2e-2, kind=:likelihood)
     k = ncoef(model)
     n = length(y)
     if kind == :likelihood
@@ -89,8 +100,8 @@ Bayesian information criterion of a mixture model.
 
 Returns Bayesian information criterion values. If X, y are not given, BIC is evaluated by training data.
 """
-bic(model::MixtureRegression; λ=2e-2) = ncoef(model)*log(length(y)) - 2λ*loglikelihood(model)
-function bic(model::MixtureRegression, X::AbstractVecOrMat, y::AbstractVector; λ=2e-2, kind=:likelihood)
+bic(model::AbstractRegression; λ=2e-2) = ncoef(model)*log(length(y)) - 2λ*loglikelihood(model)
+function bic(model::AbstractRegression, X::AbstractVecOrMat, y::AbstractVector; λ=2e-2, kind=:likelihood)
     k = ncoef(model)
     n = length(y)
     if kind == :likelihood

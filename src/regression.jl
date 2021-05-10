@@ -2,7 +2,10 @@ using Statistics
 
 import Statistics: std
 
-mutable struct LinearRegression{T<:Real,V<:AbstractVector}
+abstract type AbstractRegression end
+struct NullRegression <: AbstractRegression end
+
+mutable struct LinearRegression{T<:Real,V<:AbstractVector} <: AbstractRegression
     β::V
     σ::T
     se::V
@@ -11,13 +14,21 @@ end
 
 LinearRegression(d::Integer) = LinearRegression(rand(d+1), rand(), rand(d+1), 0)
 
+coef(::NullRegression) = []
 coef(model::LinearRegression) = model.β
+
+std(::NullRegression) = model.σ
 std(model::LinearRegression) = model.σ
+
 stderror(model::LinearRegression) = model.se
+
+ncoef(::NullRegression) = 0
 ncoef(model::LinearRegression) = length(model.β)
+
+nobs(::NullRegression) = 0
 nobs(model::LinearRegression) = model.n
 
-function dof(model::LinearRegression; kind=:regression)
+function dof(model::AbstractRegression; kind=:regression)
     if kind == :regression
         return ncoef(model) - 1
     elseif kind == :residual
@@ -40,7 +51,16 @@ residual(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector) = y - 
 function fit!(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector{T}) where {T}
     model.n = length(y)
     D = design_matrix(X)
-    model.β = inv(D'*D) * D'*y
+    try
+        inv_D = inv(D'*D)
+    catch e
+        if e isa LinearAlgebra.LAPACKException
+            @warn "LAPACKException is captured."
+        end
+    finally
+        return NullRegression()
+    end
+    model.β = inv_D * D'*y
     mse = MSE(model, X, y, corrected=true)
     model.σ = sqrt(mse * dof(model, kind=:residual) / nobs(model))
     # se of slopes

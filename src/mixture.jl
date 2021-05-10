@@ -1,7 +1,9 @@
 using GLM
 using GaussianMixtures
 
-struct MixtureRegression{K,R,T<:Integer,S}
+abstract type AbstractMixtureRegression <: AbstractRegression end
+
+struct MixtureRegression{K,R,T<:Integer,S} <: AbstractMixtureRegression
     models::Vector{R}
     clusters::Vector{T}
     likelihoods::Vector{S}
@@ -63,14 +65,20 @@ function fit(::Type{MixtureRegression{K}}, X::AbstractVecOrMat, y::AbstractVecto
              max_iter::Integer=5, init=()->gmm_init(K, X, y)) where {K,T<:Real}
     n = length(y)
     if K == 1
-        models = [fit(LinearRegression, X, y)]
         clusters = ones(Int64, n)
+        models = AbstractRegression[fit(LinearRegression, X, y)]
         likelihoods = [likelihood(models[1], X, y)]
         model = MixtureRegression{K}(models, clusters, likelihoods)
         return model
     else
-        models = [LinearRegression(size(X, 2)) for i = 1:K]
-        init_clusters = init()
+        try
+            init_clusters = init()
+        catch e
+            @warn "GMM(k=$K) failed."
+        finally
+            return NullRegression()
+        end
+        models = AbstractRegression[LinearRegression(size(X, 2)) for i = 1:K]
         init_likelihoods = [Vector{T}(undef, n) for i = 1:K]
         model = MixtureRegression{K}(models, init_clusters, init_likelihoods)
         return fit!(model, X, y; max_iter=max_iter)
@@ -80,15 +88,16 @@ end
 random_init(k, n) = rand(collect(1:k), n)
 
 function gmm_init(k::Integer, xs::AbstractVector, y::AbstractVector)
-    train = hcat(xs, y)
-	gmm = GaussianMixtures.GMM(k, train, kind=:full)
-	ll = GaussianMixtures.llpg(gmm, train)
-	clusters = vec(map(x -> x[2], argmax(ll, dims=2)))
-    return clusters
+    @debug "GMM: k=$k, xs: $(size(xs)), y: $(size(y))"
+	_gmm_init(k, hcat(xs, y))
 end
 
 function gmm_init(k::Integer, X::AbstractMatrix, y::AbstractVector)
-    train = hcat(X', y)
+    @debug "GMM: k=$k, xs: $(size(X)), y: $(size(y))"
+    _gmm_init(k, hcat(X', y))
+end
+
+function _gmm_init(k::Integer, train::AbstractMatrix)
 	gmm = GaussianMixtures.GMM(k, train, kind=:full)
 	ll = GaussianMixtures.llpg(gmm, train)
 	clusters = vec(map(x -> x[2], argmax(ll, dims=2)))
