@@ -3,14 +3,16 @@ using MLDataUtils
 function validate_score(reg::Type{MixtureRegression{K}}, X::AbstractVecOrMat, y::AbstractVector{T};
                         cv=0, λ=2e-2, criterion=aic, return_model=false)  where {K,T}
     if cv == 0
-        model = fit(reg, X, y)
+        init_cluster = clustering(K, X, y; method=gmm_clustering)
+        model = fit(MixtureRegression, init_cluster, X, y)
         score = criterion(model, λ=λ)
         return return_model ? Dict(:model=>model, :score=>score) : score
     else
         scores = T[]
-        models = reg[]
+        models = MixtureRegression[]
         for (trains, vals) in kfolds(collect(1:length(y)), k=cv)
-            model = fit(reg, _view(X, trains), view(y, trains))
+            init_cluster = clustering(K, _view(X, trains), view(y, trains); method=gmm_clustering)
+            model = fit(MixtureRegression, init_cluster, _view(X, trains), view(y, trains))
             score = criterion(model, _view(X, vals), view(y, vals), λ=λ)
             return_model && push!(models, model)
             push!(scores, score)

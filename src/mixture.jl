@@ -61,48 +61,35 @@ function fit!(model::MixtureRegression, X::AbstractVecOrMat, y::AbstractVector{T
     return model
 end
 
-function fit(::Type{MixtureRegression{K}}, X::AbstractVecOrMat, y::AbstractVector{T};
-             max_iter::Integer=5, init=()->gmm_init(K, X, y)) where {K,T<:Real}
+function fit(::Type{MixtureRegression{1}}, X::AbstractVecOrMat, y::AbstractVector{T};
+             max_iter::Integer=5, init=()->clustering(K, X, y)) where {K,T<:Real}
     n = length(y)
-    if K == 1
-        clusters = ones(Int64, n)
-        models = AbstractRegression[fit(LinearRegression, X, y)]
-        likelihoods = [likelihood(models[1], X, y)]
-        model = MixtureRegression{K}(models, clusters, likelihoods)
-        return model
-    else
-        try
-            init_clusters = init()
-        catch e
-            @warn "GMM(k=$K) failed."
-        finally
-            return NullRegression()
-        end
-        models = AbstractRegression[LinearRegression(size(X, 2)) for i = 1:K]
-        init_likelihoods = [Vector{T}(undef, n) for i = 1:K]
-        model = MixtureRegression{K}(models, init_clusters, init_likelihoods)
-        return fit!(model, X, y; max_iter=max_iter)
-    end
+    clusters = ones(Int64, n)
+    models = AbstractRegression[fit(LinearRegression, X, y)]
+    likelihoods = [likelihood(models[1], X, y)]
+    model = MixtureRegression{1}(models, clusters, likelihoods)
+    return model
+end
+
+function fit(::Type{MixtureRegression{K}}, X::AbstractVecOrMat, y::AbstractVector{T};
+             max_iter::Integer=5, init=()->clustering(K, X, y)) where {K,T<:Real}
+    n = length(y)
+    init_clusters = init()
+    models = AbstractRegression[LinearRegression(size(X, 2)) for i = 1:K]
+    init_likelihoods = [Vector{T}(undef, n) for i = 1:K]
+    model = MixtureRegression{K}(models, init_clusters, init_likelihoods)
+    return fit!(model, X, y; max_iter=max_iter)
+end
+
+function fit(::Type{MixtureRegression}, init_clusters::AbstractVector, X::AbstractVecOrMat, y::AbstractVector{T};
+             max_iter::Integer=5) where {T<:Real}
+    n = length(y)
+    k = length(unique(init_clusters))
+    init() = init_clusters
+    return fit(MixtureRegression{k}, X, y, max_iter=max_iter, init=init)
 end
 
 random_init(k, n) = rand(collect(1:k), n)
-
-function gmm_init(k::Integer, xs::AbstractVector, y::AbstractVector)
-    @debug "GMM: k=$k, xs: $(size(xs)), y: $(size(y))"
-	_gmm_init(k, hcat(xs, y))
-end
-
-function gmm_init(k::Integer, X::AbstractMatrix, y::AbstractVector)
-    @debug "GMM: k=$k, xs: $(size(X)), y: $(size(y))"
-    _gmm_init(k, hcat(X', y))
-end
-
-function _gmm_init(k::Integer, train::AbstractMatrix)
-	gmm = GaussianMixtures.GMM(k, train, kind=:full)
-	ll = GaussianMixtures.llpg(gmm, train)
-	clusters = vec(map(x -> x[2], argmax(ll, dims=2)))
-    return clusters
-end
 
 predict(model::MixtureRegression{K}, X::AbstractMatrix) where {K} = [predict(model.models[k], X) for k = 1:K]
 

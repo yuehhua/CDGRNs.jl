@@ -1,6 +1,7 @@
 module GRN
 
 using LinearAlgebra
+using Clustering: kmeans, assignments
 using CSV
 using DataFrames
 using Distributions
@@ -44,9 +45,18 @@ export
     truncat_adjl!,
     truncat_gene2num!,
 
+    # clustering
+    clustering,
+    gmm_clustering,
+    kmeans_clustering,
+
     # regression
     LinearRegression,
+    coef,
     std,
+    stderror,
+    ncoef,
+    nobs,
     design_matrix,
     predict,
     fit, fit!,
@@ -76,6 +86,7 @@ include("data.jl")
 include("preprocess.jl")
 include("utils.jl")
 
+include("clustering.jl")
 include("regression.jl")
 include("mixture.jl")
 include("metrics.jl")
