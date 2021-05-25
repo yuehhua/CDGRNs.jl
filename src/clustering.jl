@@ -7,24 +7,43 @@ function gmm_clustering(k::Integer, train::AbstractMatrix)
 end
 
 function kmeans_clustering(k::Integer, train::AbstractMatrix)
-    n = size(train, 1)
-    n < k && (k = n)
-    @warn "k-means(k=$k, n=$n)"
 	res = kmeans(train', k; maxiter=200, display=:none)
 	clusters = assignments(res)
     return clusters
 end
 
+function kmedoids_clustering(k::Integer, train::AbstractMatrix)
+    D = pairwise(Euclidean(), train, dims=1)
+    res = kmedoids(D, k; maxiter=200, display=:none)
+	clusters = assignments(res)
+    return clusters
+end
+
+function cmeans_clustering(k::Integer, train::AbstractMatrix)
+	res = fuzzy_cmeans(train', k, 2; maxiter=200, display=:none)
+	clusters = assignments(res)
+    return clusters
+end
+
+
 clustering(k::Integer, xs::AbstractVector, y::AbstractVector; method=gmm_clustering) = clustering(method, k, hcat(xs, y))
 clustering(k::Integer, X::AbstractMatrix, y::AbstractVector; method=gmm_clustering) = clustering(method, k, hcat(X', y))
-clustering(method, k::Integer, train::AbstractMatrix) = method(k, train)
+function clustering(method, k::Integer, train::AbstractMatrix)
+    n = size(train, 1)
+    n < k && (k = n)
+    return method(k, train)
+end
 
 function clustering(method::typeof(gmm_clustering), k::Integer, train::AbstractMatrix)
+    n = size(train, 1)
+    n < k && (k = n)
+    k == 1 && (return ones(Int64, n))
     try
         return method(k, train)
     catch e
         @warn "GMM(k=$k, n=$(size(train, 1))) failed, fallback to k-means."
     finally
-        return kmeans_clustering(k, train)
+        @warn "kmedoids(k=$k, n=$n)"
+        return kmedoids_clustering(k, train)
     end
 end

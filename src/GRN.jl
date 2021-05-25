@@ -1,16 +1,20 @@
 module GRN
 
 using LinearAlgebra
-using Clustering: kmeans, assignments
+using Missings
+using SparseArrays
+using Statistics
+
+using Clustering: kmeans, kmedoids, fuzzy_cmeans, assignments
 using CSV
 using DataFrames
+using Distances
 using Distributions
 using LightGraphs: SimpleDiGraph, add_edge!
-using Missings
 using SnowyOwl
-using SparseArrays
 using StatsBase
 
+import Statistics: std
 import GLM: fit, predict, coef, stderror, loglikelihood, dof, nobs
 import StatsBase: dof, nobs, fit!
 

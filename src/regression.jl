@@ -1,7 +1,3 @@
-using Statistics
-
-import Statistics: std
-
 abstract type AbstractRegression end
 struct NullRegression <: AbstractRegression end
 
