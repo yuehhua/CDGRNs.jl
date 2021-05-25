@@ -21,7 +21,8 @@ end
 
 function cmeans_clustering(k::Integer, train::AbstractMatrix)
 	res = fuzzy_cmeans(train', k, 2; maxiter=200, display=:none)
-	clusters = assignments(res)
+    memberships = res.weights
+	clusters = vec(map(x -> x[2], argmax(memberships, dims=2)))
     return clusters
 end
 
@@ -43,7 +44,7 @@ function clustering(method::typeof(gmm_clustering), k::Integer, train::AbstractM
     catch e
         @warn "GMM(k=$k, n=$(size(train, 1))) failed, fallback to k-means."
     finally
-        @warn "kmedoids(k=$k, n=$n)"
-        return kmedoids_clustering(k, train)
+        @warn "cmeans(k=$k, n=$n)"
+        return cmeans_clustering(k, train)
     end
 end
