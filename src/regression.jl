@@ -1,5 +1,10 @@
 abstract type AbstractRegression end
-struct NullRegression <: AbstractRegression end
+
+struct NullRegression{T<:Real} <: AbstractRegression
+    μ::T
+    σ::T
+    n::Integer
+end
 
 mutable struct LinearRegression{T<:Real,V<:AbstractVector} <: AbstractRegression
     β::V
@@ -10,18 +15,18 @@ end
 
 LinearRegression(d::Integer) = LinearRegression(rand(d+1), rand(), rand(d+1), 0)
 
-coef(::NullRegression) = []
+coef(model::NullRegression) = [model.μ, model.σ]
 coef(model::LinearRegression) = model.β
 
-std(::NullRegression) = model.σ
+std(model::NullRegression) = model.σ
 std(model::LinearRegression) = model.σ
 
 stderror(model::LinearRegression) = model.se
 
-ncoef(::NullRegression) = 0
+ncoef(::NullRegression) = 2
 ncoef(model::LinearRegression) = length(model.β)
 
-nobs(::NullRegression) = 0
+nobs(model::NullRegression) = model.n
 nobs(model::LinearRegression) = model.n
 
 function dof(model::AbstractRegression; kind=:regression)
@@ -40,9 +45,18 @@ end
 design_matrix(x::AbstractVector{T}) where {T} = hcat(ones(T, length(x)), x)
 design_matrix(X::AbstractMatrix{T}) where {T} = hcat(ones(T, size(X, 1)), X)
 
+predict(model::NullRegression, x::AbstractVector) = repeat([model.μ], length(x))
+predict(model::NullRegression, X::AbstractMatrix) = repeat([model.μ], size(X, 1))
 predict(model::LinearRegression, X::AbstractVecOrMat) = design_matrix(X)*model.β
 
+residual(model::NullRegression, X::AbstractVecOrMat, y::AbstractVector) = y - predict(model, X)
 residual(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector) = y - predict(model, X)
+
+function fit!(model::NullRegression, x::AbstractVector, y::AbstractVector)
+    model.μ, model.σ = mean_and_std(y, corrected=true)
+    model.n = length(y)
+    return model
+end
 
 function fit!(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector{T}) where {T}
     model.n = length(y)
@@ -54,7 +68,7 @@ function fit!(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector{T}
             @warn "LAPACKException is captured."
         end
     finally
-        return NullRegression()
+        return fit(NullRegression, X, y)
     end
     model.β = inv_D * D'*y
     mse = MSE(model, X, y, corrected=true)
@@ -72,6 +86,8 @@ function fit!(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector{T}
     model.se = [se_intercept, se_slope...]
     model
 end
+
+fit(::Type{NullRegression}, x::AbstractVector, y::AbstractVector) = NullRegression(mean_and_std(y, corrected=true)..., length(y))
 
 function fit(::Type{LinearRegression}, x::AbstractVector, y::AbstractVector)
     model = LinearRegression(1)

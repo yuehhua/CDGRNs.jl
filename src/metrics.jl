@@ -1,8 +1,8 @@
-SSE(::NullRegression, X::AbstractVecOrMat, y::AbstractVector{T}) where {T} = typemax(float(T))
+SSE(model::NullRegression, X::AbstractVecOrMat, y::AbstractVector) = residual(model, X, y)'*residual(model, X, y)
 SSE(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector) = residual(model, X, y)'*residual(model, X, y)
 
 
-MSE(::NullRegression, X::AbstractVecOrMat, y::AbstractVector{T}) where {T} = typemax(float(T))
+MSE(::NullRegression, X::AbstractVecOrMat, y::AbstractVector) = var(y)
 function MSE(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector; corrected=false)
     sse = SSE(model, X, y)
     return corrected ? sse / dof(model, kind=:residual) : sse / nobs(model)
@@ -19,7 +19,11 @@ function MSE(model::MixtureRegression{K}, X::AbstractVecOrMat, y::AbstractVector
 end
 
 
-likelihood(::NullRegression, X::AbstractVecOrMat, y::AbstractVector{T}) where {T} = zero(float(T))
+function likelihood(model::NullRegression, X::AbstractVecOrMat, y::AbstractVector)
+    normal = Normal(0, model.σ)
+    return pdf.(normal, residual(model, X, y))
+end
+
 function likelihood(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector)
     normal = Normal(0, std(model))
     return pdf.(normal, residual(model, X, y))
@@ -35,7 +39,13 @@ Log likelihood of a model.
 Returns log likelihood values. If X, y are not given, log likelihood is evaluated by training data.
 """
 loglikelihood(::NullRegression; average::Bool=false) = -Inf
-loglikelihood(::NullRegression, X::AbstractVecOrMat, y::AbstractVector{T}; average::Bool=false) where {T} = typemin(float(T))
+function loglikelihood(model::NullRegression, X::AbstractVecOrMat, y::AbstractVector; average::Bool=false)
+    n = model.n
+    ll = 0.5 * n * log(2π) + n * log(model.σ)
+    ll -= 0.5 * sum(zscore(y).^2) / n
+    return ll
+end
+
 function loglikelihood(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector; average::Bool=false)
     normal = Normal(0, std(model))
     lls = logpdf.(normal, residual(model, X, y))
