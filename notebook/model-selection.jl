@@ -1,14 +1,21 @@
 # Model selection
+using Logging
+using Statistics: mean
+
+using CSV
+using DataFrames
+using Gadfly
+using JLD2
+using MLDataUtils
 
 using GRN
-using DataFrames
-using CSV
-using JLD2
 using SnowyOwl
-using Gadfly
-using MLDataUtils
-using Statistics: mean
+
 Gadfly.set_default_plot_size(8inch, 6inch)
+
+# logger
+io = open("model-selection.log", "w+")
+logger = SimpleLogger(io)
 
 ## Load data
 
@@ -49,27 +56,58 @@ filter!(:fit_likelihood => x -> !ismissing(x), tf_vars)
 
 ## All pairs combination
 
-# Threads.@threads for i = 1:nrow(vars)
-# 	for j = 1:nrow(tf_vars)
-# 		df = DataFrame(X=tf_s[j, :], Y=u[i, :])
-# 		df.logX = log1p.(df.X)
-# 		df.logY = log1p.(df.Y)
-# 		p = plot(df, x=:logX, y=:logY,
-# 				Geom.point, Guide.title("Relationship of s_tf and u_targ"),
-# 				Guide.xlabel("log1p spliced RNA of TF gene, $(tf_vars[j, :index])"),
-# 				Guide.ylabel("log1p unspliced RNA of target gene, $(vars[i, :index])"),
-# 		)
-# 		p |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "all pair tf-gene", "$(tf_vars[j, :index])-$(vars[i, :index]) log plot.svg"), 10inch, 6inch)
-# 	end
-# end
-
-gene_name = "Rps3"
-i = collect(1:nrow(vars))[vars.index .== gene_name][1]
-j = 8
-df = DataFrame(X=tf_s[j, :], Y=u[i, :])
-df.logX = log1p.(df.X)
-df.logY = log1p.(df.Y)
-
-k_range = 2:10
+k_range = 1:5
 cv = 5
-best_k = grid_search(MixtureRegression, df.logX, df.logY, k_range, cv=cv, verbosity=2)
+splock = Threads.SpinLock()
+total_results = []
+with_logger(logger) do
+    Threads.@threads for i = 1:nrow(vars)
+        for j = 1:nrow(tf_vars)
+            tf_name = tf_vars[j, :index]
+            gene_name = vars[i, :index]
+
+            df = DataFrame(X=tf_s[j, :], Y=u[i, :])
+            df.logX = log1p.(df.X)
+            df.logY = log1p.(df.Y)
+
+            results = grid_search(MixtureRegression, df.logX, df.logY, k_range,
+                                  λ=0.02, cv=cv, 
+                                  best_model=true, return_score=true, verbosity=2)
+            best_k = results[:best_k]
+            model = results[:model]
+            scores = results[:score]
+            ll = loglikelihood(model, average=true)
+
+            lock(splock) do
+                @info "(i=$i, j=$j) $tf_name - $gene_name: best k = $best_k with log likelihood: $ll"
+                push!(total_results, (tf_name=tf_name, gene_name=gene_name, best_k=best_k, ll=ll, scores=scores))
+            end
+
+            if best_k != 1
+                df.clusters = string.(model.clusters)
+                fs = [x -> coef(model.models[i])'*[1, x] for i = 1:best_k]
+                xmax = ceil(maximum(df.logX))
+                xmin = floor(minimum(df.logX))
+
+                p = plot(
+                        layer(df, x=:logX, y=:logY, color=:clusters, Geom.point),
+                        layer(fs, xmin, xmax),
+                        Guide.xlabel("log1p spliced RNA of TF gene, $(tf_name)"),
+                        Guide.ylabel("log1p unspliced RNA of target gene, $(gene_name)"),
+                )
+                p |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "model-selection", "$(tf_name)-$(gene_name) log plot.svg"), 10inch, 6inch)
+            end
+        end
+    end
+end
+
+close(io)
+
+# gene_name = "Rps3"
+# i = collect(1:nrow(vars))[vars.index .== gene_name][1]
+# j = 8
+# df = DataFrame(X=tf_s[j, :], Y=u[i, :])
+# df.logX = log1p.(df.X)
+# df.logY = log1p.(df.Y)
+
+# best_k = grid_search(MixtureRegression, df.logX, df.logY, k_range, λ=0.02, verbosity=2)
