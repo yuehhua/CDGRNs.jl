@@ -57,7 +57,9 @@ filter!(:fit_likelihood => x -> !ismissing(x), tf_vars)
 ## All pairs combination
 
 k_range = 1:5
+cv = 5
 splock = Threads.SpinLock()
+total_results = []
 with_logger(logger) do
     Threads.@threads for i = 1:nrow(vars)
         for j = 1:nrow(tf_vars)
@@ -68,27 +70,32 @@ with_logger(logger) do
             df.logX = log1p.(df.X)
             df.logY = log1p.(df.Y)
 
-            results = grid_search(MixtureRegression, df.logX, df.logY, k_range, λ=0.02, best_model=true)
+            results = grid_search(MixtureRegression, df.logX, df.logY, k_range,
+                                  λ=0.02, cv=cv, 
+                                  best_model=true, return_score=true, verbosity=2)
             best_k = results[:best_k]
             model = results[:model]
-
+            scores = results[:score]
             ll = loglikelihood(model, average=true)
 
             lock(splock) do
                 @info "(i=$i, j=$j) $tf_name - $gene_name: best k = $best_k with log likelihood: $ll"
+                push!(total_results, (tf_name=tf_name, gene_name=gene_name, best_k=best_k, ll=ll, scores=scores))
             end
 
             if best_k != 1
                 df.clusters = string.(model.clusters)
                 fs = [x -> coef(model.models[i])'*[1, x] for i = 1:best_k]
+                xmax = ceil(maximum(df.logX))
+                xmin = floor(minimum(df.logX))
 
                 p = plot(
                         layer(df, x=:logX, y=:logY, color=:clusters, Geom.point),
-                        layer(fs, -4, 4),
+                        layer(fs, xmin, xmax),
                         Guide.xlabel("log1p spliced RNA of TF gene, $(tf_name)"),
                         Guide.ylabel("log1p unspliced RNA of target gene, $(gene_name)"),
                 )
-                p |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "all pair tf-gene", "$(tf_name)-$(gene_name) log plot.svg"), 10inch, 6inch)
+                p |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "model-selection", "$(tf_name)-$(gene_name) log plot.svg"), 10inch, 6inch)
             end
         end
     end

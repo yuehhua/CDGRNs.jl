@@ -44,7 +44,7 @@ function clustering(method::typeof(gmm_clustering), k::Integer, train::AbstractM
     catch e
         @warn "GMM(k=$k, n=$(size(train, 1))) failed, fallback to k-means."
     finally
-        @warn "cmeans(k=$k, n=$n)"
-        return cmeans_clustering(k, train)
+        @warn "kmeans(k=$k, n=$n)"
+        return kmeans_clustering(k, train)
     end
 end
