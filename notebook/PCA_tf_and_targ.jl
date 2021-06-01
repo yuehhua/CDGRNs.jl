@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.3
+# v0.14.7
 
 using Markdown
 using InteractiveUtils
@@ -13,6 +13,7 @@ begin
 	using JLD2
 	using SnowyOwl
 	using MultivariateStats
+	using Statistics
 	using Plots
 	using StatsPlots
 	plotly()
@@ -89,10 +90,31 @@ end
 # ╔═╡ a1846552-7295-11eb-37df-95e5ebb08910
 md"## Select TF-target gene pairs"
 
+# ╔═╡ d7efd693-0210-4521-bf0e-52fccc7c4c34
+begin
+	manual = false
+	top_perc = 0.001
+	manual || @load "../results/model-selection-result.jld2" all_pairs
+	folder_name = manual ? "pca-trajectory-manual" : "pca-trajectory"
+end
+
+# ╔═╡ e33b42b7-528e-45e7-8f83-6add435c81eb
+begin
+	if manual
+		tf_list = ["E2f1", "Nr3c1", "Pax6", "Pdx1", "Vdr"]
+		gene_list = ["Auts2", "Bicc1", "Cacna1d", "Cadps", "Cdc14b", "Cdh1", "Cntrob", "Cpe", "Dcbld1", "Dnmt3a", "Ezh2", "Fam219a", "Pcsk2", "Rps3"]
+	else
+		all_pairs.mean_score = Statistics.mean.(all_pairs.scores)
+		sort!(all_pairs, :mean_score)
+		pattern_pairs = all_pairs[all_pairs.best_k .!= 1, :]
+		top_pairs = pattern_pairs[1:ceil(Int, top_perc * nrow(all_pairs)), :]
+		tf_list = top_pairs.tf_name
+		gene_list = top_pairs.gene_name
+	end
+end
+
 # ╔═╡ 980807ca-72ba-11eb-0347-f744ea81b3f7
 begin
-	tf_list = ["E2f1", "Nr3c1", "Pax6", "Pdx1", "Vdr"]
-	gene_list = ["Auts2", "Bicc1", "Cacna1d", "Cadps", "Cdc14b", "Cdh1", "Cntrob", "Cpe", "Dcbld1", "Dnmt3a", "Ezh2", "Fam219a", "Pcsk2", "Rps3"]
 	tf_idx = [findfirst(tf_vars.index .== x) for x in tf_list]
 	gene_idx = [findfirst(vars.index .== x) for x in gene_list]
 end
@@ -124,37 +146,37 @@ end
 @df df scatter(:PC1, :PC2, group=:Cell, xlabel="PC1", ylabel="PC2", legend=:outerright)
 
 # ╔═╡ ad13416f-6d2e-4672-9567-535ea584a682
-savefig(joinpath(GRN.PROJECT_PATH, "pics", "pca-trajectory", "pc12-cell type.svg"))
+savefig(joinpath(GRN.PROJECT_PATH, "pics", folder_name, "pc12-cell type.svg"))
 
 # ╔═╡ 0014145d-9296-4f9e-93f6-c3fc3350d9d2
 @df df scatter(:PC1, :PC2, zcolor=:time, c=:coolwarm, xlabel="PC1", ylabel="PC2")
 
 # ╔═╡ c23b896a-b6b5-4889-9465-99e82136a6d4
-savefig(joinpath(GRN.PROJECT_PATH, "pics", "pca-trajectory", "pc12-latent time.svg"))
+savefig(joinpath(GRN.PROJECT_PATH, "pics", folder_name, "pc12-latent time.svg"))
 
 # ╔═╡ d43bd1a7-6e01-45b3-9feb-717c0fa3f9c6
 @df df scatter(:PC1, :PC3, group=:Cell, xlabel="PC1", ylabel="PC3")
 
 # ╔═╡ e1383e10-c1d2-4ab0-b356-8c55c251aa7d
-savefig(joinpath(GRN.PROJECT_PATH, "pics", "pca-trajectory", "pc13-cell type.svg"))
+savefig(joinpath(GRN.PROJECT_PATH, "pics", folder_name, "pc13-cell type.svg"))
 
 # ╔═╡ da9eb528-db8c-49dd-9f03-5258ec80413c
 @df df scatter(:PC1, :PC3, zcolor=:time, c=:coolwarm, xlabel="PC1", ylabel="PC3")
 
 # ╔═╡ 9f37e00f-83b7-46e9-bb80-5cd86aa17624
-savefig(joinpath(GRN.PROJECT_PATH, "pics", "pca-trajectory", "pc13-latent time.svg"))
+savefig(joinpath(GRN.PROJECT_PATH, "pics", folder_name, "pc13-latent time.svg"))
 
 # ╔═╡ fa8c0932-0b48-412e-b4e0-7a91513eebb7
 @df df scatter(:PC1, :PC2, :PC3, group=:Cell, xlabel="PC1", ylabel="PC2", zlabel="PC3")
 
 # ╔═╡ 3c16a1e5-d9b3-42d5-a37c-c4012689147d
-savefig(joinpath(GRN.PROJECT_PATH, "pics", "pca-trajectory", "pc123-cell type.svg"))
+savefig(joinpath(GRN.PROJECT_PATH, "pics", folder_name, "pc123-cell type.svg"))
 
 # ╔═╡ cc7a3093-5c9f-486d-8053-a3a8c103846b
 @df df scatter(:PC1, :PC2, :PC3, zcolor=:time, c=:coolwarm, xlabel="PC1", ylabel="PC2", zlabel="PC3")
 
 # ╔═╡ 5445d95c-306d-4a80-82d8-3b66769effc4
-savefig(joinpath(GRN.PROJECT_PATH, "pics", "pca-trajectory", "pc123-latent time.svg"))
+savefig(joinpath(GRN.PROJECT_PATH, "pics", folder_name, "pc123-latent time.svg"))
 
 # ╔═╡ 8e20100c-ee55-4f3b-8f28-0a6c0014c925
 md"## Relationship between regulatory and cell trajectory"
@@ -179,14 +201,10 @@ begin
 		 			xlabel="log2 spliced RNA of TF gene, $(tf_vars[j, :index])",
 		 			ylabel="log2 unspliced RNA of target gene, $(vars[i, :index])",
 	)
-	# @df df2 scatter!(:logX, :logY, zcolor=(x,y) -> (x+y)/2,
-	# 				 c=cgrad(:grays, alpha=0.3),
-	# 				 markerstrokewidth=0,
-	# )
 end
 
 # ╔═╡ 4735a5a4-50e9-46c1-b7f0-cf06f4caf4a8
-savefig(joinpath(GRN.PROJECT_PATH, "pics", "pca-trajectory", "TF-gene regulation.svg"))
+savefig(joinpath(GRN.PROJECT_PATH, "pics", folder_name, "TF-gene regulation.svg"))
 
 # ╔═╡ d37b33fa-03b6-43dc-8939-816fa67342a7
 @df df scatter(:PC1, :PC2, zcolor=df2.Ratio,
@@ -196,7 +214,7 @@ savefig(joinpath(GRN.PROJECT_PATH, "pics", "pca-trajectory", "TF-gene regulation
 )
 
 # ╔═╡ 67ac0c95-24e3-4ef0-a109-6cb55380bd91
-savefig(joinpath(GRN.PROJECT_PATH, "pics", "pca-trajectory", "pc12-regulation.svg"))
+savefig(joinpath(GRN.PROJECT_PATH, "pics", folder_name, "pc12-regulation.svg"))
 
 # ╔═╡ 1f5db7fa-b713-43cc-a0d6-364b55fd4a6b
 @df df scatter(:PC1, :PC2, :PC3, zcolor=df2.Ratio,
@@ -206,10 +224,10 @@ savefig(joinpath(GRN.PROJECT_PATH, "pics", "pca-trajectory", "pc12-regulation.sv
 )
 
 # ╔═╡ 9e2114cc-78ef-4b9f-b003-64ba396aaabb
-savefig(joinpath(GRN.PROJECT_PATH, "pics", "pca-trajectory", "pc123-regulation.svg"))
+savefig(joinpath(GRN.PROJECT_PATH, "pics", folder_name, "pc123-regulation.svg"))
 
 # ╔═╡ a7005d26-98b3-438f-a106-321163e071c5
-savefig(joinpath(GRN.PROJECT_PATH, "pics", "pca-trajectory", "pc123-regulation.html"))
+savefig(joinpath(GRN.PROJECT_PATH, "pics", folder_name, "pc123-regulation.html"))
 
 # ╔═╡ Cell order:
 # ╟─6e36a6d2-86d2-11eb-210a-b5589313a599
@@ -224,6 +242,8 @@ savefig(joinpath(GRN.PROJECT_PATH, "pics", "pca-trajectory", "pc123-regulation.h
 # ╠═8415622a-728e-11eb-0b5c-eb0412e77da8
 # ╠═f97f2b40-7293-11eb-3137-05e11185f7b3
 # ╟─a1846552-7295-11eb-37df-95e5ebb08910
+# ╠═d7efd693-0210-4521-bf0e-52fccc7c4c34
+# ╠═e33b42b7-528e-45e7-8f83-6add435c81eb
 # ╠═980807ca-72ba-11eb-0347-f744ea81b3f7
 # ╠═e44422fa-9fe5-461e-8c0f-aef10ebd9468
 # ╠═aba85b62-6bcf-4566-9608-e2f930829ff5
