@@ -168,12 +168,8 @@ md"## Training"
 begin
 	K = 4
 	dpglm_model = DPGLM(df.logX, df.logY, K);
-end
-
-# ╔═╡ 0d58aa90-78ee-4160-bf54-8227d4aa9470
-begin
-	dpglm_sampler = Gibbs(PG(500, :k), HMC(0.05, 10, :σ, :β₀, :β))
-	tchain = sample(dpglm_model, dpglm_sampler, MCMCThreads(), 100, 5);
+	dpglm_sampler = Gibbs(PG(100, :k), NUTS(1000, 0.65, :σ, :β₀, :β))
+	tchain = sample(dpglm_model, dpglm_sampler, MCMCThreads(), 100, 3);
 end
 
 # ╔═╡ 022aca1c-cde2-466b-968c-0099d4da467c
@@ -233,7 +229,6 @@ p4 = plot(
 # ╠═588bba1c-f70a-4a19-af4e-68b0c8838eae
 # ╟─07c4f4e6-2218-435d-867e-0d86fdafefa0
 # ╠═44498fa5-4081-46c7-9818-182e0de4d450
-# ╠═0d58aa90-78ee-4160-bf54-8227d4aa9470
 # ╟─022aca1c-cde2-466b-968c-0099d4da467c
 # ╠═4ef69d6c-3e38-45e8-abcf-9b0720ba9c25
 # ╠═3ac387b5-838f-4fcd-87da-81cebee2a4b5
