@@ -1,8 +1,7 @@
 function gmm_clustering(k::Integer, train::AbstractMatrix)
 	gmm = GaussianMixtures.GMM(k, train, kind=:full)
-    @warn "GMM(k=$k, n=$(size(train, 1))) failed, fallback to k-means."
 	ll = GaussianMixtures.llpg(gmm, train)
-	clusters = vec(map(x -> x[2], argmax(ll, dims=2)))
+	clusters = assign_clusters(ll)
     return clusters
 end
 
@@ -22,10 +21,11 @@ end
 function cmeans_clustering(k::Integer, train::AbstractMatrix)
 	res = fuzzy_cmeans(train', k, 2; maxiter=200, display=:none)
     memberships = res.weights
-	clusters = vec(map(x -> x[2], argmax(memberships, dims=2)))
+	clusters = assign_clusters(memberships)
     return clusters
 end
 
+assign_clusters(ll) = vec(map(x -> x[2], argmax(ll, dims=2)))
 
 clustering(k::Integer, xs::AbstractVector, y::AbstractVector; method=gmm_clustering) = clustering(method, k, hcat(xs, y))
 clustering(k::Integer, X::AbstractMatrix, y::AbstractVector; method=gmm_clustering) = clustering(method, k, hcat(X', y))
@@ -42,6 +42,7 @@ function clustering(method::typeof(gmm_clustering), k::Integer, train::AbstractM
     try
         return method(k, train)
     catch e
+        @show e
         @warn "GMM(k=$k, n=$(size(train, 1))) failed, fallback to k-means."
     finally
         @warn "kmeans(k=$k, n=$n)"
