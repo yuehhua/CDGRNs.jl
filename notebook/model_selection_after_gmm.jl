@@ -56,6 +56,7 @@ j = 8
 df = DataFrame(X=tf_s[j, :], Y=u[i, :])
 df.logX = log1p.(df.X)
 df.logY = log1p.(df.Y)
+train = Array(df[:, [:logX, :logY]])
 
 # train
 k_range = 2:5

@@ -12,11 +12,11 @@ begin
 	using CSV
 	using JLD2
 	using SnowyOwl
-	using MultivariateStats
+	using Clustering
 	using Statistics
 	using Plots
 	using StatsPlots
-	plotly()
+	gr()
 	default(size = (800, 600))
 end;
 
@@ -129,30 +129,55 @@ end
 
 # ╔═╡ d66265e1-2b43-473d-b751-796caec241f0
 begin
-	clst = [Symbol("clst_$i") for i = 1:2]
+	clst = [Symbol("clst_$i") for i = 1:12]
 	unique(df[:, clst])
 end
 
-# ╔═╡ 88b8c3d5-4bdc-4097-83eb-739d850c39d5
-function encode(df)
-	unique(df)
-	res = Int[]
-	mapping = []
-	for r = eachrow(df)
-		key = Tuple(r)
-		if key in mapping
-			val = findfirst(x->x .== key, mapping)
-		else
-			push!(mapping, key)
-			val = length(mapping)
-		end
-		push!(res, val)
+# ╔═╡ 9ddb0879-d858-47e1-a2b9-b985091b5d75
+begin
+	cell_cluster = DataFrame(Cell=prof.obs.clusters, time=prof.obs.latent_time)
+	for col in clst
+		cell_cluster[:, col] = parse.(Int, df[:, col])
 	end
-	return res
 end
 
-# ╔═╡ dcea6708-26d7-4175-aa9c-83ae1d1b8f8f
-encode(df[:, clst])
+# ╔═╡ 943be3ff-4ff8-4af1-b330-e4dc1d200082
+begin
+	X = Array(cell_cluster[:, clst])
+	D = pairwise(Hamming(), X, dims=1)
+end;
+
+# ╔═╡ 79958651-09d4-4a73-9252-084caa356ed8
+hc_col = hclust(D, linkage=:ward, branchorder=:optimal)
+
+# ╔═╡ 8212b7f3-8af4-4c24-a59f-8db5de921074
+begin
+	l = grid(2, 1, heights=[0.2,0.8])
+	
+	p = plot(
+		layout = l,
+		plot(hc_col, xticks=false, yticks=false),
+		plot(
+			D[hc_col.order,hc_col.order],
+			st=:heatmap,
+			colorbar=false,
+			c=:YlGnBu_9,
+		)
+	)
+end
+
+# ╔═╡ b7ffa801-ac3c-47e2-9c8a-357ef6df0e40
+savefig(p, "../pics/clustering/meta-clustering_transcription_states.svg")
+
+# ╔═╡ a8c14754-be55-4fc0-b629-f0562db4e27e
+plot(
+	df.Cell[hc_col.order],
+	st=:heatmap,
+	colorbar=false,
+)
+
+# ╔═╡ 539878c3-d003-4b90-8abb-00e0ebb747bd
+CSV.write("../results/clusters.tsv", cell_cluster)
 
 # ╔═╡ Cell order:
 # ╟─6e36a6d2-86d2-11eb-210a-b5589313a599
@@ -171,5 +196,10 @@ encode(df[:, clst])
 # ╠═e33b42b7-528e-45e7-8f83-6add435c81eb
 # ╠═e44422fa-9fe5-461e-8c0f-aef10ebd9468
 # ╠═d66265e1-2b43-473d-b751-796caec241f0
-# ╠═88b8c3d5-4bdc-4097-83eb-739d850c39d5
-# ╠═dcea6708-26d7-4175-aa9c-83ae1d1b8f8f
+# ╠═9ddb0879-d858-47e1-a2b9-b985091b5d75
+# ╠═943be3ff-4ff8-4af1-b330-e4dc1d200082
+# ╠═79958651-09d4-4a73-9252-084caa356ed8
+# ╠═8212b7f3-8af4-4c24-a59f-8db5de921074
+# ╠═b7ffa801-ac3c-47e2-9c8a-357ef6df0e40
+# ╠═a8c14754-be55-4fc0-b629-f0562db4e27e
+# ╠═539878c3-d003-4b90-8abb-00e0ebb747bd
