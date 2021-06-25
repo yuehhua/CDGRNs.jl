@@ -137,28 +137,46 @@ md"## Model"
 @model DPGLM(x, y, K) = begin
     N = size(x, 1)
     
+	# k
     α = 1.0
     w ~ Dirichlet(K, α)
-
-	σ = Vector(undef, K)
-	β₀ = Vector(undef, K)
-	β = Vector(undef, K)
-	for i in 1:K
-		σ[i] ~ InverseGamma(2, 3)
-		β₀[i] ~ Normal(0, sqrt(3))
-		β[i] ~ Normal(0, sqrt(10))
-	end
     
     k = Vector{Int}(undef, N)
     for i in 1:N
         k[i] ~ Categorical(w)
     end
-		
-	σs = [σ[k[i]] for i in 1:N]
-	μs = [β₀[k[i]] + x[i] * β[k[i]] for i in 1:N]
+	# k ~ DirichletMultinomial(K, fill(α, N))
 	
-	y ~ MvNormal(μs, sqrt.(σs))
-    return k
+	# θ_x for each k
+	x_σ = Vector(undef, K)
+	x_μ = Vector(undef, K)
+	for i in 1:K
+		x_σ[i] ~ InverseGamma(2, 3)
+		x_μ[i] ~ Normal(0, sqrt(x_σ[i]))
+	end
+	
+	# θ_x for each observation
+	x_σs = [x_σ[k[i]] for i in 1:N]
+	x_μs = [x_μ[k[i]] for i in 1:N]
+
+	# θ_y for each k
+	y_σ = Vector(undef, K)
+	β₀ = Vector(undef, K)
+	β = Vector(undef, K)
+	for i in 1:K
+		y_σ[i] ~ InverseGamma(2, 1)
+		β₀[i] ~ Normal(0, sqrt(3))
+		β[i] ~ Normal(0, sqrt(10))
+	end
+	
+	# θ_y for each observation
+	y_σs = [y_σ[k[i]] for i in 1:N]
+	y_μs = [β₀[k[i]] + x[i] * β[k[i]] for i in 1:N]
+	
+	# Each observation generated independently
+	x ~ MvNormal(x_μs, sqrt.(x_σs))
+	y ~ MvNormal(y_μs, sqrt.(y_σs))
+    # return k
 end
 
 # ╔═╡ 07c4f4e6-2218-435d-867e-0d86fdafefa0
@@ -168,21 +186,65 @@ md"## Training"
 begin
 	K = 4
 	dpglm_model = DPGLM(df.logX, df.logY, K);
-	dpglm_sampler = Gibbs(PG(100, :k), NUTS(1000, 0.65, :σ, :β₀, :β))
-	tchain = sample(dpglm_model, dpglm_sampler, MCMCThreads(), 100, 3);
+	dpglm_sampler = Gibbs(PG(100, :k), NUTS(1000, 0.85, :x_μ, :x_σ, :y_σ, :β₀, :β))
+	chains = sample(dpglm_model, dpglm_sampler, MCMCThreads(), 100, 4);
 end
+
+# ╔═╡ 29fafabd-127d-4726-bf74-3457fef9f70e
+size(chains)
 
 # ╔═╡ 022aca1c-cde2-466b-968c-0099d4da467c
 md"## Visualize"
 
-# ╔═╡ 4ef69d6c-3e38-45e8-abcf-9b0720ba9c25
+# ╔═╡ 4213dfea-2f9b-46bb-a7bf-cc6a37b20bca
+describe(chains)
+
+# ╔═╡ 969f6a99-6091-494a-b503-a9a41d2876d6
 begin
-	ids = findall(map(name -> occursin("β", string(name)), names(tchain)));
-	p=plot(tchain[:, ids, :], legend=true, labels = ["β 1" "β 2"], colordim=:parameter)
+	function coefs(chains, K)
+		w = Vector{Float64}(undef, K)
+		σ = Vector{Float64}(undef, K)
+		β₀ = Vector{Float64}(undef, K)
+		β = Vector{Float64}(undef, K)
+		for k = 1:K
+			w[k] = mean(chains["w[$k]"])
+			σ[k] = mean(chains["σ[$k]"])
+			β₀[k] = mean(chains["β₀[$k]"])
+			β[k] = mean(chains["β[$k]"])
+		end
+		return w, σ, β₀, β
+	end
+	
+# 	function predict(x, chains, K)
+# 		w, σ, β₀, β = coefs(chains, K)
+# 		n = size(x, 1)
+# 		ys = Vector{Float64}(undef, n)
+
+# 		return 
+# 	end
+	
+# 	function landscape(x, chains, K)
+# 		w, σ, β₀, β = coefs(chains, K)
+
+# 		σs = [σ[k[i]] for i in 1:N]
+# 		μs = [β₀[k[i]] + x[i] * β[k[i]] for i in 1:N]
+
+# 		y ~ MvNormal(μs, sqrt.(σs))
+# 		return Turing.logaddexp(
+# 			log(w[1]) + logpdf(Normal(0., σ[1]), x), 
+# 			log(w[2]) + logpdf(Normal(0., σ[2]), x)
+# 		)
+# 	end
+end
+
+# ╔═╡ dadf9156-ee8d-4640-853b-c576deac50aa
+begin
+	ws, σs, β₀s, βs = coefs(chains, K)
+	fs = [x -> β₀s[k] + x*βs[k] for k = 1:K]
 end
 
 # ╔═╡ 3ac387b5-838f-4fcd-87da-81cebee2a4b5
-p3 = plot(
+p = plot(
 	 layer(fs, -4, 4),
 	 layer(df, x=:logX, y=:logY, color=:Cell, Geom.point),
 	 Guide.xlabel("log1p spliced RNA of TF gene, $(tf_vars[j, :index])"),
@@ -191,19 +253,10 @@ p3 = plot(
 )
 
 # ╔═╡ f19d5fbf-eb39-4596-9118-e5e85b787b6f
-# p3 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene model", "$(tf_vars[j, :index])-$(vars[i, :index]) log plot.svg"), 8inch, 6inch)
+p |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene model", "bayesian $(tf_vars[j, :index])-$(vars[i, :index]) log plot.svg"), 8inch, 6inch)
 
-# ╔═╡ 81e445de-d4f8-4c83-984c-1ebfc53f9f85
-p4 = plot(
-		layer(fs, -4, 4),
-		layer(df, x=:logX, y=:logY, color=:clusters, Geom.point),
-		Guide.xlabel("log1p spliced RNA of TF gene, $(tf_vars[j, :index])"),
-		Guide.ylabel("log1p unspliced RNA of target gene, $(vars[i, :index])"),
-		Coord.cartesian(xmin=0, xmax=2.5, ymin=1.3, ymax=3.5)
-)
-
-# ╔═╡ 6d87de92-3b9d-477d-bee1-523a4d981c20
-# p4 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene model", "$(tf_vars[j, :index])-$(vars[i, :index]) log plot-predict.svg"), 8inch, 6inch)
+# ╔═╡ f4a51b90-d805-486e-bfae-ec156595d86f
+@save "../results/chains.jld2" chains
 
 # ╔═╡ Cell order:
 # ╟─6e36a6d2-86d2-11eb-210a-b5589313a599
@@ -229,9 +282,11 @@ p4 = plot(
 # ╠═588bba1c-f70a-4a19-af4e-68b0c8838eae
 # ╟─07c4f4e6-2218-435d-867e-0d86fdafefa0
 # ╠═44498fa5-4081-46c7-9818-182e0de4d450
+# ╠═29fafabd-127d-4726-bf74-3457fef9f70e
 # ╟─022aca1c-cde2-466b-968c-0099d4da467c
-# ╠═4ef69d6c-3e38-45e8-abcf-9b0720ba9c25
+# ╠═4213dfea-2f9b-46bb-a7bf-cc6a37b20bca
+# ╠═969f6a99-6091-494a-b503-a9a41d2876d6
+# ╠═dadf9156-ee8d-4640-853b-c576deac50aa
 # ╠═3ac387b5-838f-4fcd-87da-81cebee2a4b5
 # ╠═f19d5fbf-eb39-4596-9118-e5e85b787b6f
-# ╠═81e445de-d4f8-4c83-984c-1ebfc53f9f85
-# ╠═6d87de92-3b9d-477d-bee1-523a4d981c20
+# ╠═f4a51b90-d805-486e-bfae-ec156595d86f
