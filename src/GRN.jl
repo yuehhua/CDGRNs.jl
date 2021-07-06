@@ -1,7 +1,7 @@
 module GRN
 
 using LinearAlgebra: AbstractMatrix
-using GaussianMixtures: GaussianMixture
+using GaussianMixtures: GaussianMixture, length
 using LinearAlgebra
 using Missings
 using SparseArrays
@@ -80,7 +80,10 @@ export
     update_expectation!,
     fit!,
     fit,
+
+    # metrics
     loglikelihood,
+    membership,
     aic,
     bic,
     
