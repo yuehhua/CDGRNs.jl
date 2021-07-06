@@ -65,7 +65,12 @@ end
     @test nullgmr isa NullGMR
     @test typeof(nullgmr) <: AbstractGMR{1}
 
-    gmr = fit(GMR{3}, X)
+    K = 3
+    gmr = fit(GMR{K}, X)
     @test gmr isa GMR
-    @test typeof(gmr) <: AbstractGMR{3}
+    @test typeof(gmr) <: AbstractGMR{K}
+
+    clst = assign_clusters(gmr, X)
+    @test size(clst) == (n,)
+    @test Set(clst) == Set(collect(1:K))
 end

@@ -1,7 +1,6 @@
 module GRN
 
-using LinearAlgebra: AbstractMatrix
-using GaussianMixtures: GaussianMixture, length
+using GaussianMixtures: GaussianMixture
 using LinearAlgebra
 using Missings
 using SparseArrays
@@ -55,6 +54,7 @@ export
     clustering,
     gmm_clustering,
     kmeans_clustering,
+    assign_clusters,
 
     # regression
     LinearRegression,

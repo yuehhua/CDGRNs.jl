@@ -117,3 +117,8 @@ function fit(::Type{GMR{K}}, X::AbstractMatrix) where {K}
     model = MixtureModel(gmm)
     return GMR{K,typeof(model)}(model, size(X, 1))
 end
+
+function assign_clusters(model::GMR, X::AbstractMatrix)
+    posterior = membership(model, X)
+    return assign_clusters(posterior)
+end
