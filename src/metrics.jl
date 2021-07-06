@@ -52,22 +52,31 @@ function loglikelihood(model::LinearRegression, X::AbstractVecOrMat, y::Abstract
     return average ? mean(lls) : sum(lls)
 end
 
-loglikelihood(model::MixtureRegression{K}; average::Bool=false) where {K} = _loglikelihood(model.likelihoods, model.clusters, K, average)
+loglikelihood(model::MixtureRegression{K}) where {K} = _loglikelihood(model.likelihoods, model.clusters, K)
 
-function loglikelihood(model::MixtureRegression{K}, X::AbstractVecOrMat, y::AbstractVector; average::Bool=false) where {K}
+function loglikelihood(model::MixtureRegression{K}, X::AbstractVecOrMat, y::AbstractVector) where {K}
     likelihoods = _likelihood(model, X, y)
     clusters = map(hard_split, likelihoods...)
-    return _loglikelihood(likelihoods, clusters, K, average)
+    return _loglikelihood(likelihoods, clusters, K)
 end
 
-function _loglikelihood(ls, clusters, K, avg)
+function _loglikelihood(ls, clusters, K)
     ll = if K == 1
         sum(log.(ls[1]))
     else
-        sum(k -> sum(log.(ls[k][clusters .== k])), 1:K)
+        n = length(clusters)
+        # log(w_k)
+        logws = map(k -> log(sum(ls[k])) - log(n), 1:K)
+        # log P(y | x, θ)
+        logliks = map(k -> sum(log.(ls[k][clusters .== k])), 1:K)
+        # log(w_k) + log P(y | x, θ)
+        log(sum(exp.(logws + logliks)))
     end
-    return avg ? ll/length(clusters) : ll
+    return ll
 end
+
+gen_logpdf(mixtures::Vector{<:AbstractMvNormal}, w::AbstractVector, K::Integer=length(w)) =
+    (x...) -> log(sum(exp(map(k -> log(w[k]) + logpdf(mixtures[k], [x...]), 1:K))))
 
 
 """

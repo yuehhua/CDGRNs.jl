@@ -61,15 +61,7 @@ end
 function fit!(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector{T}) where {T}
     model.n = length(y)
     D = design_matrix(X)
-    try
-        inv_D = inv(D'*D)
-    catch e
-        if e isa LinearAlgebra.LAPACKException
-            @warn "LAPACKException is captured."
-        end
-    finally
-        return fit(NullRegression, X, y)
-    end
+    inv_D = inv(D'*D)
     model.β = inv_D * D'*y
     mse = MSE(model, X, y, corrected=true)
     model.σ = sqrt(mse * dof(model, kind=:residual) / nobs(model))
