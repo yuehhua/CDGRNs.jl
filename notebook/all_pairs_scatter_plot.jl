@@ -1,15 +1,15 @@
 # Model selection
+using Statistics: mean
+
+using CSV
+using DataFrames
+using Gadfly
+using JLD2
+using MLDataUtils
 
 using GRN
-using DataFrames
-using CSV
-using JLD2
 using SnowyOwl
-using Gadfly
-using MLDataUtils
-using Clustering
-using Distances
-using Statistics
+
 Gadfly.set_default_plot_size(8inch, 6inch)
 
 ## Load data
@@ -49,24 +49,25 @@ tf_s = tf_s[.!(ismissing.(tf_vars.fit_likelihood)), :]
 tf_vₛ = tf_vₛ[.!(ismissing.(tf_vars.fit_likelihood)), :]
 filter!(:fit_likelihood => x -> !ismissing(x), tf_vars)
 
-# prepare data
-gene_name = "Rps3"
-i = collect(1:nrow(vars))[vars.index .== gene_name][1]
-j = 8
-df = DataFrame(X=tf_s[j, :], Y=u[i, :])
-df.logX = log1p.(df.X)
-df.logY = log1p.(df.Y)
-train = Array(df[:, [:logX, :logY]])
+## All pairs combination
 
-# train
-k_range = 2:5
-models = [GaussianMixtures.GMM(k, train, kind=:full) for k in k_range]
+Threads.@threads for i = 1:nrow(vars)
+    for j = 1:nrow(tf_vars)
+        tf_name = tf_vars[j, :index]
+        gene_name = vars[i, :index]
 
-# predict
-lls = [GaussianMixtures.llpg(m, train) for m in models]
-clusters = [vec(map(x -> x[2], argmax(ll, dims=2))) for ll in lls]
+        df = DataFrame(X=tf_s[j, :], Y=u[i, :])
+        df.logX = log1p.(df.X)
+        df.logY = log1p.(df.Y)
 
-# validate
-D = pairwise(Euclidean(), train, dims=1)
-sil_scores = [silhouettes(clst, D) for clst in clusters]
-mean_sil_scores = [mean(s) for s in sil_scores]
+        p = plot(
+            df, x=:logX, y=:logY, Geom.point,
+            Guide.xlabel("log1p spliced RNA of TF gene, $(tf_name)"),
+            Guide.ylabel("log1p unspliced RNA of target gene, $(gene_name)"),
+        )
+        p |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "all pair tf-gene", "$(tf_name)-$(gene_name) log plot.svg"), 10inch, 6inch)
+        sleep(1)
+
+        @info "$(tf_name) - $(gene_name) plot"
+    end
+end

@@ -103,6 +103,10 @@ end
 
 close(io)
 
+all_pairs = DataFrame(total_results)
+
+@save "results/model-selection-result.jld2" all_pairs
+
 # gene_name = "Rps3"
 # i = collect(1:nrow(vars))[vars.index .== gene_name][1]
 # j = 8

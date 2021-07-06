@@ -83,7 +83,6 @@ end
 
 function fit(::Type{MixtureRegression}, init_clusters::AbstractVector, X::AbstractVecOrMat, y::AbstractVector{T};
              max_iter::Integer=5) where {T<:Real}
-    n = length(y)
     k = length(unique(init_clusters))
     init() = init_clusters
     return fit(MixtureRegression{k}, X, y, max_iter=max_iter, init=init)
