@@ -25,7 +25,7 @@ function cmeans_clustering(k::Integer, train::AbstractMatrix)
     return clusters
 end
 
-assign_clusters(ll) = vec(map(x -> x[2], argmax(ll, dims=2)))
+assign_clusters(post) = vec(map(x -> x[2], argmax(post, dims=2)))
 
 clustering(k::Integer, xs::AbstractVector, y::AbstractVector; method=gmm_clustering) = clustering(method, k, hcat(xs, y))
 clustering(k::Integer, X::AbstractMatrix, y::AbstractVector; method=gmm_clustering) = clustering(method, k, hcat(X', y))
