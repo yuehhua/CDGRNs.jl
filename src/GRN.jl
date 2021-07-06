@@ -1,5 +1,7 @@
 module GRN
 
+using LinearAlgebra: AbstractMatrix
+using GaussianMixtures: GaussianMixture
 using LinearAlgebra
 using Missings
 using SparseArrays
@@ -56,6 +58,9 @@ export
 
     # regression
     LinearRegression,
+    AbstractGMR,
+    NullGMR,
+    GMR,
     coef,
     std,
     stderror,
