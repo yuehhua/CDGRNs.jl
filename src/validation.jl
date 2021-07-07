@@ -21,6 +21,13 @@ function validate_score(reg::Type{MixtureRegression{K}}, X::AbstractVecOrMat, y:
     end
 end
 
+function validate_score(reg::Type{GMR{K}}, X::AbstractVecOrMat{T};
+                        λ=2e-2, criterion=aic, return_model=false)  where {K,T}
+    model = fit(reg, X)
+    score = criterion(model, X, λ=λ)
+    return return_model ? Dict(:model=>model, :score=>score) : score
+end
+
 select_hyperparams(scores, ::typeof(aic)) = argmin(scores)
 select_hyperparams(scores, ::typeof(bic)) = argmin(scores)
 select_hyperparams(scores, ::typeof(likelihood)) = argmax(scores)
@@ -31,7 +38,7 @@ function grid_search(reg::Type{MixtureRegression}, X::AbstractVecOrMat, y::Abstr
                      cv=0, λ=2e-2, criterion=aic, best_model=false, return_score=false, verbosity::Integer=0) where {T}
     mean_scores = T[]
     for k = k_range
-        scores = validate_score(MixtureRegression{k}, X, y; cv=cv, λ=λ, return_model=false)
+        scores = validate_score(reg{k}, X, y; cv=cv, λ=λ, return_model=false)
         ms = mean(scores)
         verbosity > 1 && @info "With k = $k"
         verbosity > 1 && @info "CV scores: $ms ($scores)"
@@ -54,4 +61,34 @@ function grid_search(reg::Type{MixtureRegression}, X::AbstractVecOrMat, y::Abstr
         end
     end
     return results
+end
+
+function grid_search(reg::Type{GMR}, X::AbstractVecOrMat{T}, k_range;
+					 best_model=false, return_score=false, verbosity::Integer=0) where {T}
+	scores = T[]
+	for k = k_range
+        score = validate_score(reg{k}, X; λ=λ, return_model=false)
+		verbosity > 1 && @info "With k = $k"
+		verbosity > 1 && @info "Score: $score"
+		push!(scores, score)
+	end
+
+	best_k = k_range[select_hyperparams(scores, criterion)]
+	results = best_k
+
+	if return_score
+		results = Dict(:best_k=>best_k, :score=>scores)
+	end
+
+	if best_model
+		model = fit(reg{best_k}, X)
+		clusters = assign_clusters(model, X)
+		if return_score
+			results[:model] = model
+			results[:clusters] = clusters
+		else
+			results = Dict(:best_k=>best_k, :model=>model, :clusters=>clusters)
+		end
+	end
+	return results
 end
