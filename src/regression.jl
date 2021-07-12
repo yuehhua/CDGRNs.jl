@@ -106,6 +106,10 @@ struct GMR{K,D<:AbstractMixtureModel} <: AbstractGMR{K}
     n::Integer
 end
 
+struct FailedGMR{K} <: AbstractGMR{K}
+    n::Integer
+end
+
 function fit(::Type{GMR{1}}, X::AbstractMatrix)
     μ, σ = mean_and_std(X, 1, corrected=true)
     mvn = MvNormal(vec(μ), diagm(vec(σ)))
@@ -113,10 +117,18 @@ function fit(::Type{GMR{1}}, X::AbstractMatrix)
 end
 
 function fit(::Type{GMR{K}}, X::AbstractMatrix) where {K}
-    gmm = GaussianMixtures.GMM(K, X, kind=:full)
-    model = MixtureModel(gmm)
-    return GMR{K,typeof(model)}(model, size(X, 1))
+    try
+        gmm = GaussianMixtures.GMM(K, X, kind=:full)
+        model = MixtureModel(gmm)
+        return GMR{K,typeof(model)}(model, size(X, 1))
+    catch e
+        if e isa PosDefException
+            return FailedGMR{K}(size(X, 1))
+        end
+    end
 end
+
+assign_clusters(::NullGMR, X::AbstractMatrix) = ones(Int, size(X, 1))
 
 function assign_clusters(model::GMR, X::AbstractMatrix)
     posterior = membership(model, X)

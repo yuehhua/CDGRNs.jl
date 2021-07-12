@@ -1,6 +1,6 @@
 module GRN
 
-using GaussianMixtures: GaussianMixture
+using GaussianMixtures: GaussianMixture, size
 using LinearAlgebra
 using Missings
 using SparseArrays
@@ -89,7 +89,10 @@ export
     
     # validation
     validate_score,
-    grid_search
+    grid_search,
+    best_result,
+    best_score,
+    best_model
 
 
 include("distributions.jl")

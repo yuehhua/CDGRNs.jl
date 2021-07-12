@@ -25,7 +25,7 @@ function validate_score(reg::Type{GMR{K}}, X::AbstractVecOrMat{T};
                         λ=2e-2, criterion=aic, return_model=false)  where {K,T}
     model = fit(reg, X)
     score = criterion(model, X, λ=λ)
-    return return_model ? Dict(:model=>model, :score=>score) : score
+    return return_model ? (model=model, score=score, k=K) : (score=score, k=K)
 end
 
 select_hyperparams(scores, ::typeof(aic)) = argmin(scores)
@@ -33,6 +33,12 @@ select_hyperparams(scores, ::typeof(bic)) = argmin(scores)
 select_hyperparams(scores, ::typeof(likelihood)) = argmax(scores)
 select_hyperparams(scores, ::typeof(loglikelihood)) = argmax(scores)
 select_hyperparams(scores, ::typeof(nll)) = argmin(scores)
+
+lowest_score(::typeof(aic)) = Inf
+lowest_score(::typeof(bic)) = Inf
+lowest_score(::typeof(likelihood)) = -Inf
+lowest_score(::typeof(loglikelihood)) = -Inf
+lowest_score(::typeof(nll)) = -Inf
 
 function grid_search(reg::Type{MixtureRegression}, X::AbstractVecOrMat, y::AbstractVector{T}, k_range;
                      cv=0, λ=2e-2, criterion=aic, best_model=false, return_score=false, verbosity::Integer=0) where {T}
@@ -63,32 +69,30 @@ function grid_search(reg::Type{MixtureRegression}, X::AbstractVecOrMat, y::Abstr
     return results
 end
 
-function grid_search(reg::Type{GMR}, X::AbstractVecOrMat{T}, k_range;
-					 best_model=false, return_score=false, verbosity::Integer=0) where {T}
-	scores = T[]
+function grid_search(reg::Type{GMR}, X::AbstractVecOrMat, k_range;
+                     λ=2e-2, criterion=aic, verbosity::Integer=0)
+    results = []
 	for k = k_range
-        score = validate_score(reg{k}, X; λ=λ, return_model=false)
-		verbosity > 1 && @info "With k = $k"
-		verbosity > 1 && @info "Score: $score"
-		push!(scores, score)
+        res = validate_score(reg{k}, X; λ=λ, return_model=true)
+        push!(results, res)
+        verbosity > 1 && @info "With k = $(res[:k])"
+        verbosity > 1 && @info "Score: $(res[:score])"
 	end
+    results
+end
 
-	best_k = k_range[select_hyperparams(scores, criterion)]
-	results = best_k
+function best_result(results; criterion=aic)
+    scores = map(x -> x[:score], results)
+    return results[select_hyperparams(scores, criterion)]
+end
 
-	if return_score
-		results = Dict(:best_k=>best_k, :score=>scores)
-	end
+function best_score(results; criterion=aic)
+    scores = map(x -> x[:score], results)
+    return scores[select_hyperparams(scores, criterion)]
+end
 
-	if best_model
-		model = fit(reg{best_k}, X)
-		clusters = assign_clusters(model, X)
-		if return_score
-			results[:model] = model
-			results[:clusters] = clusters
-		else
-			results = Dict(:best_k=>best_k, :model=>model, :clusters=>clusters)
-		end
-	end
-	return results
+function best_model(results; criterion=aic)
+    scores = map(x -> x[:score], results)
+    models = map(x -> x[:model], results)
+    return models[select_hyperparams(scores, criterion)]
 end

@@ -31,6 +31,7 @@ end
 
 likelihood(model::AbstractGMR, x::AbstractVector) = pdf.(model.dist, x)
 likelihood(model::AbstractGMR, X::AbstractMatrix) = [pdf(model.dist, vec(X[i,:])) for i = 1:size(X, 1)]
+likelihood(model::FailedGMR, X::AbstractMatrix{T}) where {T} = [zero(T) for i = 1:size(X, 1)]
 
 
 """
@@ -81,6 +82,7 @@ end
 
 loglikelihood(model::AbstractGMR, x::AbstractVector) = logpdf.(model.dist, x)
 loglikelihood(model::AbstractGMR, X::AbstractMatrix) = [logpdf(model.dist, vec(X[i,:])) for i = 1:size(X, 1)]
+loglikelihood(model::FailedGMR, X::AbstractMatrix) = [-Inf for i = 1:size(X, 1)]
 
 function _loglikelihood(ls, clusters, K)
     ll = if K == 1
