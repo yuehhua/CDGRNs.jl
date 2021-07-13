@@ -12,6 +12,7 @@ tests = [
     "layers",
     "data",
     "regression",
+    "metrics",
     "mixture",
 ]
 

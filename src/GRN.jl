@@ -1,5 +1,6 @@
 module GRN
 
+using GaussianMixtures: GaussianMixture, size
 using LinearAlgebra
 using Missings
 using SparseArrays
@@ -53,9 +54,13 @@ export
     clustering,
     gmm_clustering,
     kmeans_clustering,
+    assign_clusters,
 
     # regression
     LinearRegression,
+    AbstractGMR,
+    NullGMR,
+    GMR,
     coef,
     std,
     stderror,
@@ -75,13 +80,19 @@ export
     update_expectation!,
     fit!,
     fit,
+
+    # metrics
     loglikelihood,
+    membership,
     aic,
     bic,
     
     # validation
     validate_score,
-    grid_search
+    grid_search,
+    best_result,
+    best_score,
+    best_model
 
 
 include("distributions.jl")

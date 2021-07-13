@@ -208,7 +208,7 @@ begin
 		β = Vector{Float64}(undef, K)
 		for k = 1:K
 			w[k] = mean(chains["w[$k]"])
-			σ[k] = mean(chains["σ[$k]"])
+			σ[k] = mean(chains["y_σ[$k]"])
 			β₀[k] = mean(chains["β₀[$k]"])
 			β[k] = mean(chains["β[$k]"])
 		end
