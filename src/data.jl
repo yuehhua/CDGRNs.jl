@@ -32,3 +32,41 @@ function add_velocity!(prof::Profile, dir::String;
     prof.layers[:velocity_u] = collect(Missings.replace(Matrix(velocity_u[:,2:end])', 0))
     prof
 end
+
+# function filter_genes!(prof::Profile; min_likelihood=0.1)
+#     select_likelihood = x -> !ismissing(x) && x .≥ min_likelihood
+
+#     vars = filter(:fit_likelihood => select_likelihood, prof.var)
+#     prof.var = sort!(vars, :fit_likelihood, rev=true)
+    
+#     selected_rows = select_likelihood.(prof.var.fit_likelihood)
+#     prof.data = prof.data[selected_rows, :]
+#     prof.layers[:Mu] = prof.layers[:Mu][selected_rows, :]
+#     prof.layers[:velocity_u] = prof.layers[:velocity_u][selected_rows, :]
+#     prof.layers[:Ms] = prof.layers[:Ms][selected_rows, :]
+#     prof.layers[:velocity] = prof.layers[:velocity][selected_rows, :]
+#     prof
+# end
+
+load_tfs(filepath::String) = load(filepath, "tf_set")
+
+# function filter_tfs!(prof::Profile, tf_set)
+#     select_index = x -> uppercase(x) in tf_set
+#     select_likelihood = x -> !ismissing(x)
+
+#     selected_rows = select_index.(prof.var.index)
+#     tf_vars = filter(:index => select_index, prof.var)
+#     tf_data = prof.data[selected_rows, :]
+#     tf_u = prof.layers[:Mu][selected_rows, :]
+#     tf_vᵤ = prof.layers[:velocity_u][selected_rows, :]
+#     tf_s = prof.layers[:Ms][selected_rows, :]
+#     tf_vₛ = prof.layers[:velocity][selected_rows, :]
+
+#     selected_rows = select_likelihood.(tf_vars.fit_likelihood)
+#     filter!(:fit_likelihood => x -> select_likelihood(x), tf_vars)
+#     tf_data = tf_data[selected_rows, :]
+#     tf_u = tf_u[selected_rows, :]
+#     tf_vᵤ = tf_vᵤ[selected_rows, :]
+#     tf_s = tf_s[selected_rows, :]
+#     tf_vₛ = tf_vₛ[selected_rows, :]
+# end

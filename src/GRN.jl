@@ -11,6 +11,7 @@ using CSV
 using DataFrames
 using Distances
 using Distributions
+using FileIO: load
 using LightGraphs: SimpleDiGraph, add_edge!
 using SnowyOwl
 using StatsBase

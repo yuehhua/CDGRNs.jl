@@ -124,6 +124,8 @@ function fit(::Type{GMR{K}}, X::AbstractMatrix) where {K}
     catch e
         if e isa PosDefException
             return FailedGMR{K}(size(X, 1))
+        else
+            rethrow(e)
         end
     end
 end

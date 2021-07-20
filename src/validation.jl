@@ -46,8 +46,7 @@ function grid_search(reg::Type{MixtureRegression}, X::AbstractVecOrMat, y::Abstr
     for k = k_range
         scores = validate_score(reg{k}, X, y; cv=cv, λ=λ, return_model=false)
         ms = mean(scores)
-        verbosity > 1 && @info "With k = $k"
-        verbosity > 1 && @info "CV scores: $ms ($scores)"
+        verbosity > 1 && @info "k = $k, CV scores: $ms ($scores)"
         push!(mean_scores, ms)
     end
 
@@ -75,8 +74,7 @@ function grid_search(reg::Type{GMR}, X::AbstractVecOrMat, k_range;
 	for k = k_range
         res = validate_score(reg{k}, X; λ=λ, return_model=true)
         push!(results, res)
-        verbosity > 1 && @info "With k = $(res[:k])"
-        verbosity > 1 && @info "Score: $(res[:score])"
+        verbosity > 1 && @info "k = $(res[:k]): score: $(res[:score])"
 	end
     results
 end
