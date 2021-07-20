@@ -13,10 +13,6 @@ using Clustering
 using Distances
 Gadfly.set_default_plot_size(8inch, 6inch)
 
-# logger
-io = open("model-selection.log", "w+")
-logger = SimpleLogger(io)
-
 ## Load data
 
 dir = joinpath(GRN.PROJECT_PATH, "results")
@@ -25,33 +21,22 @@ add_unspliced_data!(prof, dir)
 add_velocity!(prof, dir)
 add_moments!(prof, dir)
 
-@load "results/tf_set.jld2" tf_set
-
 ## Select TF and target genes
 
 select_genes(x) = !ismissing(x) && x .≥ 0.1
 vars = filter(:fit_likelihood => select_genes, prof.var)
 data = prof.data[select_genes.(prof.var.fit_likelihood), :]
 u = prof.layers[:Mu][select_genes.(prof.var.fit_likelihood), :]
-vᵤ = prof.layers[:velocity_u][select_genes.(prof.var.fit_likelihood), :]
-s = prof.layers[:Ms][select_genes.(prof.var.fit_likelihood), :]
-vₛ = prof.layers[:velocity][select_genes.(prof.var.fit_likelihood), :]
 
-sort(vars, :fit_likelihood, rev=true)
+tf_set = GRN.load_tfs(joinpath(dir, "tf_set.jld2"))
 
 select_tfs(x) = uppercase(x) in tf_set
 tf_vars = filter(:index => select_tfs, prof.var)
 tf_data = prof.data[select_tfs.(prof.var.index), :]
-tf_u = prof.layers[:Mu][select_tfs.(prof.var.index), :]
-tf_vᵤ = prof.layers[:velocity_u][select_tfs.(prof.var.index), :]
 tf_s = prof.layers[:Ms][select_tfs.(prof.var.index), :]
-tf_vₛ = prof.layers[:velocity][select_tfs.(prof.var.index), :]
 
 tf_data = tf_data[.!(ismissing.(tf_vars.fit_likelihood)), :]
-tf_u = tf_u[.!(ismissing.(tf_vars.fit_likelihood)), :]
-tf_vᵤ = tf_vᵤ[.!(ismissing.(tf_vars.fit_likelihood)), :]
 tf_s = tf_s[.!(ismissing.(tf_vars.fit_likelihood)), :]
-tf_vₛ = tf_vₛ[.!(ismissing.(tf_vars.fit_likelihood)), :]
 filter!(:fit_likelihood => x -> !ismissing(x), tf_vars)
 
 ## Select target gene
@@ -121,20 +106,44 @@ filter!(:fit_likelihood => x -> !ismissing(x), tf_vars)
 
 # ----------------------------------------------------
 
+function log_likelihood_plot(df, tf_name, gene_name, mix_logpdf;
+                             xmax=ceil(maximum(df.logX)), xmin=floor(minimum(df.logX)),
+                             ymax = ceil(maximum(df.logY)), ymin = floor(minimum(df.logY)))
+    l1 = layer(df, x=:logX, y=:logY, Geom.point)
+    l2 = layer(z=mix_logpdf, xmin=[xmin], xmax=[xmax], ymin=[ymin], ymax=[ymax], Geom.contour)
+    coord = Coord.cartesian(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)
+    xlabel = "log spliced RNA of TF gene, $(tf_name)"
+    ylabel = "log unspliced RNA of target gene, $(gene_name)"
+    filepath = joinpath(GRN.PROJECT_PATH, "pics", "tf-gene gmm model", "$(tf_name)-$(gene_name) log likelihood plot.svg")
+    plot(l1, l2, coord, Guide.xlabel(xlabel), Guide.ylabel(ylabel)) |> SVG(filepath, 10inch, 6inch)
+end
 
-k_range = 1:5
-λ = 5e-3
-splock = Threads.SpinLock()
-total_results = []
-with_logger(logger) do
-    Threads.@threads for i = 1:nrow(vars)
+function cluster_plot(df, tf_name, gene_name; xmax=ceil(maximum(df.logX)), xmin=floor(minimum(df.logX)),
+    ymax = ceil(maximum(df.logY)), ymin = floor(minimum(df.logY)))
+    l = layer(df, x=:logX, y=:logY, color=:clusters, Geom.point)
+    coord = Coord.cartesian(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)
+    xlabel = "log spliced RNA of TF gene, $(tf_name)"
+    ylabel = "log unspliced RNA of target gene, $(gene_name)"
+    filepath = joinpath(GRN.PROJECT_PATH, "pics", "tf-gene gmm model", "$(tf_name)-$(gene_name) log cluster plot.svg")
+    plot(l, coord, Guide.xlabel(xlabel), Guide.ylabel(ylabel)) |> SVG(filepath, 10inch, 6inch)
+end
+
+function add_logger(func)
+    io = open("model-selection.log", "w+")
+    logger = SimpleLogger(io)
+    with_logger(func, logger)
+    close(io)
+end
+
+function training_process(k_range, λ, tf_vars, vars; logger=true)
+    total_results = []
+    splock = Threads.SpinLock()
+    process = Threads.@threads for i = 1:nrow(vars)
         for j = 1:nrow(tf_vars)
             tf_name = tf_vars[j, :index]
             gene_name = vars[i, :index]
 
-            df = DataFrame(X=tf_s[j, :], Y=u[i, :])
-            df.logX = log1p.(df.X)
-            df.logY = log1p.(df.Y)
+            df = DataFrame(logX = log1p.(tf_s[j, :]), logY = log1p.(u[i, :]))
             data = hcat(df.logX, df.logY)
 
             results = grid_search(GMR, data, k_range, λ=λ, verbosity=2)
@@ -156,45 +165,29 @@ with_logger(logger) do
 
                 if best_k != 1
                     df.clusters = string.(clusters)
-                    xmax = ceil(maximum(df.logX))
-                    xmin = floor(minimum(df.logX))
-                    ymax = ceil(maximum(df.logY))
-                    ymin = floor(minimum(df.logY))
-
-                    # log likelihood plot
-                    l3 = layer(df, x=:logX, y=:logY, Geom.point)
-                    l4 = layer(z=mix_logpdf, xmin=[xmin], xmax=[xmax], ymin=[ymin], ymax=[ymax], Geom.contour)
-                    coord = Coord.cartesian(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)
-                    p3 = plot(l3, l4, coord,
-                        Guide.xlabel("log spliced RNA of TF gene, $(tf_name)"),
-                        Guide.ylabel("log unspliced RNA of target gene, $(gene_name)"),
-                    )
-                    p3 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene gmm model", "$(tf_name)-$(gene_name) log likelihood plot.svg"), 10inch, 6inch)
-
-                    sleep(0.1)
-
-                    # cluster plot
-                    l5 = layer(df, x=:logX, y=:logY, color=:clusters, Geom.point)
-                    p4 = plot(l5, coord,
-                        Guide.xlabel("log spliced RNA of TF gene, $(tf_name)"),
-                        Guide.ylabel("log unspliced RNA of target gene, $(gene_name)"),
-                    )
-                    p4 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene gmm model", "$(tf_name)-$(gene_name) log cluster plot.svg"), 10inch, 6inch)
-                    
-                    sleep(0.1)
+                    log_likelihood_plot(df, tf_name, gene_name, mix_logpdf)
+                    cluster_plot(df, tf_name, gene_name)
                 end
             end
         end
     end
+
+    logger && add_logger(process)
+
+    total_results
 end
 
-close(io)
+
+k_range = 1:5
+λ = 3e-3
+total_results = training_process(k_range, λ, tf_vars, vars)
 
 report = DataFrame()
 report.tf_name = map(x -> x[:tf_name], total_results)
 report.gene_name = map(x -> x[:gene_name], total_results)
 report.best_k = map(x -> x[:best_k], total_results)
 report.scores = map(x -> x[:scores], total_results)
+report = report[report.best_k .!= 1, :]
 sort!(report, :scores)
 
 @save "results/GMM-model-selection-result.jld2" total_results
