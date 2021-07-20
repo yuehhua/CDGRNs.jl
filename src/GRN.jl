@@ -72,6 +72,7 @@ export
     fit, fit!,
     residual,
     likelihood,
+    correlation,
 
     # mixture
     MixtureRegression,
