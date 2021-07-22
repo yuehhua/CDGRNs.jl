@@ -3,6 +3,7 @@ using Logging
 using GRN
 using DataFrames
 using CSV
+using FileIO
 using JLD2
 using SnowyOwl
 using Gadfly
@@ -180,7 +181,44 @@ end
 
 k_range = 1:5
 λ = 3e-3
-total_results = training_process(k_range, λ, tf_vars, vars)
+# total_results = training_process(k_range, λ, tf_vars, vars)
+total_results = []
+splock = Threads.SpinLock()
+Threads.@threads for i = 1:nrow(vars)
+    for j = 1:nrow(tf_vars)
+        tf_name = tf_vars[j, :index]
+        gene_name = vars[i, :index]
+
+        df = DataFrame(logX = log1p.(tf_s[j, :]), logY = log1p.(u[i, :]))
+        data = hcat(df.logX, df.logY)
+
+        results = grid_search(GMR, data, k_range, λ=λ, verbosity=2)
+        best_res = best_result(results; criterion=aic)
+        if haskey(best_res, :model)
+            best_k = best_res[:k]
+            model = best_res[:model]
+            scores = best_res[:score]
+            clusters = assign_clusters(model, data)
+            mix_logpdf(x,y) = logpdf(model.dist, [x,y])
+
+            lock(splock) do
+                @info "(i=$i, j=$j) $tf_name - $gene_name: best k = $best_k"
+                r = (tf_name=tf_name, gene_name=gene_name,
+                    best_k=best_k, scores=scores,
+                    model=model, clusters=clusters)
+                push!(total_results, r)
+            end
+
+            if best_k != 1
+                df.clusters = string.(clusters)
+                log_likelihood_plot(df, tf_name, gene_name, mix_logpdf)
+                cluster_plot(df, tf_name, gene_name)
+            end
+        end
+    end
+end
+
+# report
 
 report = DataFrame()
 report.tf_name = map(x -> x[:tf_name], total_results)
@@ -190,4 +228,53 @@ report.scores = map(x -> x[:scores], total_results)
 report = report[report.best_k .!= 1, :]
 sort!(report, :scores)
 
-@save "results/GMM-model-selection-result.jld2" total_results
+save(joinpath(dir, "GMM-model-selection-result.jld2"), "total_results", total_results)
+
+# analysis
+
+total_results = load(joinpath(dir, "GMM-model-selection-result.jld2"), "total_results")
+
+nonsingle_pairs = filter(x -> x[:best_k] != 1, total_results)
+correlations = map(x -> correlation(x[:model]), nonsingle_pairs)
+
+corr_dist = vcat(correlations...)
+p = plot(x=corr_dist, Geom.histogram, Guide.xlabel("TF-gene pair component correlation"))
+filepath = joinpath(GRN.PROJECT_PATH, "pics", "tf-gene gmm model", "correlations", "correlation hist.svg")
+p |> SVG(filepath, 5inch, 3inch)
+
+abs_corr_dist = abs.(corr_dist)
+count(abs_corr_dist .>= 0.5)
+count(abs_corr_dist .>= 0.6)
+count(abs_corr_dist .>= 0.7)
+count(abs_corr_dist .>= 0.8)
+count(abs_corr_dist .>= 0.9)
+
+
+# clustering cells against TF-gene pair components
+
+cell_clusters = DataFrame()
+for res in nonsingle_pairs
+    colname = res[:tf_name] * "_" * res[:gene_name]
+    cell_clusters[!, colname] = res[:clusters]
+end
+
+using Distances
+using Clustering
+
+data = Array(cell_clusters)
+D = pairwise(Hamming(), data, dims=1)
+# result = hclust(D, linkage=:single)
+result = hclust(D, linkage=:ward)
+
+
+using StatsPlots
+
+p1 = plot(result, xticks=false)
+
+p2 = heatmap(D[result.order, result.order], colorbar=false, c=:YlGnBu_9)
+filepath = joinpath(GRN.PROJECT_PATH, "pics", "tf-gene gmm model", "clustering", "heatmap.svg")
+p2 |> savefig(filepath)
+
+heatmap(data[result.order, :], colorbar=false)
+
+plot(p1, p2, layout=grid(2,1, heights=[0.2,0.8]))
