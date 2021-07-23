@@ -147,3 +147,5 @@ function correlation(model::NullGMR)
 end
 
 correlation(model::GMR) = [correlation(c.Σ[1,2], c.Σ[1,1], c.Σ[2,2]) for c in model.dist.components]
+
+fisher_transform(ρs::AbstractVector) = sqrt(length(ρs)-3) .* atanh.(ρs)
