@@ -6,13 +6,14 @@ using Missings
 using SparseArrays
 using Statistics
 
-using Clustering: kmeans, kmedoids, fuzzy_cmeans, assignments
+using Clustering: kmeans, kmedoids, hclust, fuzzy_cmeans, assignments
 using CSV
 using DataFrames
 using Distances
 using Distributions
 using FileIO: load
 using LightGraphs: SimpleDiGraph, add_edge!
+using PyCall
 using SnowyOwl
 using StatsBase
 
@@ -108,5 +109,7 @@ include("regression.jl")
 include("mixture.jl")
 include("metrics.jl")
 include("validation.jl")
+
+include("plots.jl")
 
 end # module

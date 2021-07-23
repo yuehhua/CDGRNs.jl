@@ -252,29 +252,12 @@ count(abs_corr_dist .>= 0.9)
 
 # clustering cells against TF-gene pair components
 
-cell_clusters = DataFrame()
+cell_clusters = DataFrame(Cell=prof.obs.clusters, time=prof.obs.latent_time)
 for res in nonsingle_pairs
     colname = res[:tf_name] * "_" * res[:gene_name]
     cell_clusters[!, colname] = res[:clusters]
 end
 
-using Distances
-using Clustering
-
-data = Array(cell_clusters)
+data = Array(cell_clusters[:, 3:end])
 D = pairwise(Hamming(), data, dims=1)
-# result = hclust(D, linkage=:single)
-result = hclust(D, linkage=:ward)
-
-
-using StatsPlots
-
-p1 = plot(result, xticks=false)
-
-p2 = heatmap(D[result.order, result.order], colorbar=false, c=:YlGnBu_9)
-filepath = joinpath(GRN.PROJECT_PATH, "pics", "tf-gene gmm model", "clustering", "heatmap.svg")
-p2 |> savefig(filepath)
-
-heatmap(data[result.order, :], colorbar=false)
-
-plot(p1, p2, layout=grid(2,1, heights=[0.2,0.8]))
+GRN.clustermap(D, cell_clusters.Cell)
