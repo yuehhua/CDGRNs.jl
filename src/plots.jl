@@ -1,14 +1,14 @@
-const sns = pyimport("seaborn")
-
-function generate_column_colors(xs, palette="Set1")
+function generate_column_colors(xs::AbstractVector; palette="Set1")
+    sns = pyimport("seaborn")
     keys = unique(xs)
     lut = Dict(zip(keys, sns.mpl_palette(palette, length(keys))))
-    return map(x -> lut[x], cells)
+    return map(x -> lut[x], xs)
 end
 
 function clustermap(D::AbstractMatrix, labels; method::String="ward", filename="clustermap", ext=".png",
                     figsize=(12, 9), cmap="YlGnBu", dpi=300)
     fastcluster = pyimport("fastcluster")
+    sns = pyimport("seaborn")
 
     link = fastcluster.linkage(D, method=method)
     col_colors = generate_column_colors(labels)
