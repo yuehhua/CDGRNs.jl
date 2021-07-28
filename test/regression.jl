@@ -64,11 +64,13 @@ end
     nullgmr = fit(GMR{1}, X)
     @test nullgmr isa NullGMR
     @test typeof(nullgmr) <: AbstractGMR{1}
+    @test size(correlation(nullgmr)) == (1,)
 
     K = 3
     gmr = fit(GMR{K}, X)
     @test gmr isa GMR
     @test typeof(gmr) <: AbstractGMR{K}
+    @test size(correlation(gmr)) == (K,)
 
     clst = assign_clusters(gmr, X)
     @test size(clst) == (n,)
