@@ -22,23 +22,16 @@ add_unspliced_data!(prof, dir)
 add_velocity!(prof, dir)
 add_moments!(prof, dir)
 
-## Select TF and target genes
+tfs = copy(prof)
 
-select_genes(x) = !ismissing(x) && x .≥ 0.1
-vars = filter(:fit_likelihood => select_genes, prof.var)
-data = prof.data[select_genes.(prof.var.fit_likelihood), :]
-u = prof.layers[:Mu][select_genes.(prof.var.fit_likelihood), :]
+GRN.filter_genes!(prof)
+vars = prof.var
+u = prof.layers[:Mu]
 
 tf_set = GRN.load_tfs(joinpath(dir, "tf_set.jld2"))
-
-select_tfs(x) = uppercase(x) in tf_set
-tf_vars = filter(:index => select_tfs, prof.var)
-tf_data = prof.data[select_tfs.(prof.var.index), :]
-tf_s = prof.layers[:Ms][select_tfs.(prof.var.index), :]
-
-tf_data = tf_data[.!(ismissing.(tf_vars.fit_likelihood)), :]
-tf_s = tf_s[.!(ismissing.(tf_vars.fit_likelihood)), :]
-filter!(:fit_likelihood => x -> !ismissing(x), tf_vars)
+GRN.filter_tfs!(tfs, tf_set)
+tf_vars = tfs.var
+tf_s = tfs.layers[:Ms]
 
 ## Select target gene
 
@@ -178,6 +171,7 @@ function training_process(k_range, λ, tf_vars, vars; logger=true)
     total_results
 end
 
+failed = Channel(Inf)
 
 k_range = 1:5
 λ = 3e-3
@@ -192,28 +186,32 @@ Threads.@threads for i = 1:nrow(vars)
         df = DataFrame(logX = log1p.(tf_s[j, :]), logY = log1p.(u[i, :]))
         data = hcat(df.logX, df.logY)
 
-        results = grid_search(GMR, data, k_range, λ=λ, verbosity=2)
-        best_res = best_result(results; criterion=aic)
-        if haskey(best_res, :model)
-            best_k = best_res[:k]
-            model = best_res[:model]
-            scores = best_res[:score]
-            clusters = assign_clusters(model, data)
-            mix_logpdf(x,y) = logpdf(model.dist, [x,y])
+        try
+            results = grid_search(GMR, data, k_range, λ=λ, verbosity=2)
+            best_res = best_result(results; criterion=aic)
+            if haskey(best_res, :model)
+                best_k = best_res[:k]
+                model = best_res[:model]
+                scores = best_res[:score]
+                clusters = assign_clusters(model, data)
+                mix_logpdf(x,y) = logpdf(model.dist, [x,y])
 
-            lock(splock) do
-                @info "(i=$i, j=$j) $tf_name - $gene_name: best k = $best_k"
-                r = (tf_name=tf_name, gene_name=gene_name,
-                    best_k=best_k, scores=scores,
-                    model=model, clusters=clusters)
-                push!(total_results, r)
-            end
+                lock(splock) do
+                    @info "(i=$i, j=$j) $tf_name - $gene_name: best k = $best_k"
+                    r = (tf_name=tf_name, gene_name=gene_name,
+                        best_k=best_k, scores=scores,
+                        model=model, clusters=clusters)
+                    push!(total_results, r)
+                end
 
-            if best_k != 1
-                df.clusters = string.(clusters)
-                log_likelihood_plot(df, tf_name, gene_name, mix_logpdf)
-                cluster_plot(df, tf_name, gene_name)
+                if best_k != 1
+                    df.clusters = string.(clusters)
+                    log_likelihood_plot(df, tf_name, gene_name, mix_logpdf)
+                    cluster_plot(df, tf_name, gene_name)
+                end
             end
+        catch e
+            put!(failed, (tf_name, gene_name))
         end
     end
 end
