@@ -72,3 +72,13 @@ function filter_tfs!(prof::Profile, tf_set)
     prof.layers[:velocity] = prof.layers[:velocity][selected_rows, :]
     return prof
 end
+
+function load_CHEA(dirpath::String)
+    data_path = joinpath(dirpath, "data")
+    filepath = joinpath(data_path, "gene_attribute_edges.txt")
+    data = CSV.File(filepath, delim="\t") |> DataFrame
+    regulations = DataFrame()
+    regulations.tf = data.target[2:end]
+    regulations.target = data.source[2:end]
+    return regulations
+end

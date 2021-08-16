@@ -13,9 +13,12 @@ using Distances
 using Distributions
 using FileIO: load
 using LightGraphs: SimpleDiGraph, add_edge!
+using MultivariateStats
 using PyCall
 using SnowyOwl
 using StatsBase
+using Colors
+using Plots
 
 import Statistics: std
 import GLM: fit, predict, coef, stderror, loglikelihood, dof, nobs
@@ -43,9 +46,14 @@ export
     add_unspliced_data!,
     add_velocity!,
     add_moments!,
+    load_tfs,
+    load_CHEA,
+    filter_tfs,
+    filter_tfs!,
 
     # preprocess
     make_graph,
+    get_regulation_expr,
 
     # utils
     make_mapping,
@@ -95,7 +103,17 @@ export
     grid_search,
     best_result,
     best_score,
-    best_model
+    best_model,
+
+    # plot
+    make_vis_data,
+    plot_regulations,
+
+    # cdgrn
+    corr_table,
+    CDGRN,
+    train,
+    evaluate!
 
 
 include("distributions.jl")
@@ -111,5 +129,6 @@ include("metrics.jl")
 include("validation.jl")
 
 include("plots.jl")
+include("cdgrn.jl")
 
 end # module
