@@ -19,8 +19,9 @@ using SnowyOwl
 using StatsBase
 using Colors
 using Plots
+using LightGraphs
 
-import Statistics: std
+import Statistics: std, cor
 import GLM: fit, predict, coef, stderror, loglikelihood, dof, nobs
 import StatsBase: dof, nobs, fit!
 
@@ -130,5 +131,6 @@ include("validation.jl")
 
 include("plots.jl")
 include("cdgrn.jl")
+include("graph.jl")
 
 end # module

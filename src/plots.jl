@@ -29,7 +29,14 @@ function pca_transform(data::AbstractMatrix; dims=3)
     return MultivariateStats.transform(model, data)'
 end
 
-function plot_3d_pca(data::AbstractMatrix, labels::AbstractVector; context=:)
+function plot_3d_pca(data::AbstractMatrix, labels::AbstractVector)
+    pc = pca_transform(data)
+    p = Plots.scatter(pc[:, 1], pc[:, 2], pc[:, 3], group=labels, markersize=3,
+                      xlabel="PC1", ylabel="PC2", zlabel="PC3")
+    return p
+end
+
+function plot_3d_pca(data::AbstractMatrix, labels::AbstractVector, context::AbstractVector)
     pc = pca_transform(data)
     α = map(x -> x ? 1. : 0.2, context)
     colors = generate_column_colors(labels)

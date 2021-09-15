@@ -37,15 +37,7 @@ filter_genes(prof::Profile; kwargs...) = filter_genes!(copy(prof); kwargs...)
 
 function filter_genes!(prof::Profile; min_likelihood=0.1)
     select_likelihood = x -> !ismissing(x) && x .≥ min_likelihood
-    selected_rows = select_likelihood.(prof.var.fit_likelihood)
-
-    filter!(:fit_likelihood => select_likelihood, prof.var)
-    prof.data = prof.data[selected_rows, :]
-    prof.layers[:Mu] = prof.layers[:Mu][selected_rows, :]
-    prof.layers[:velocity_u] = prof.layers[:velocity_u][selected_rows, :]
-    prof.layers[:Ms] = prof.layers[:Ms][selected_rows, :]
-    prof.layers[:velocity] = prof.layers[:velocity][selected_rows, :]
-    prof
+    return filter!(:fit_likelihood => select_likelihood, prof)
 end
 
 load_tfs(filepath::String) = load(filepath, "tf_set")
