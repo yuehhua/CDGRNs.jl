@@ -2,7 +2,7 @@ function corr_table(pairs)
     # unit: component
     cor_pairs = map(x -> (tf=x[:tf_name], target=x[:gene_name], best_k=x[:best_k], corr=correlation(x[:model])), pairs)
     df = DataFrames.flatten(DataFrame(cor_pairs), :corr)
-    df.adjusted_corr = GRN.fisher_transform(df.corr)
+    df.adjusted_corr = CDGRN.fisher_transform(df.corr)
     return df
 end
 
@@ -286,8 +286,8 @@ function to_graph(part_cor::DataFrame; src=:tf, dst=:target,
     return g
 end
 
-# function network_entropy(g::AbstractGraph)
-#     d = degree(g)
-#     N = length(d)
-#     return sum(log, d) / (N * log(N - 1))
-# end
+function network_entropy(g::AbstractGraph)
+    d = degree(g)
+    N = length(d)
+    return sum(log, d) / (N * log(N - 1))
+end

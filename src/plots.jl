@@ -1,4 +1,4 @@
-function generate_column_colors(xs::AbstractVector; palette="Set1")
+function generate_column_colors(xs::AbstractVector; palette="rainbow")
     sns = pyimport("seaborn")
     keys = unique(xs)
     lut = Dict(zip(keys, sns.mpl_palette(palette, length(keys))))
@@ -15,7 +15,7 @@ function clustermap(D::AbstractMatrix, labels; method::String="ward", filename="
     
     fig = sns.clustermap(D, row_linkage=link, col_linkage=link, col_colors=col_colors,
                          figsize=figsize, cmap=cmap)
-    filepath = joinpath(GRN.PROJECT_PATH, "pics", "tf-gene gmm model", "clustering", filename*ext)
+    filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "clustering", filename*ext)
     fig.savefig(filepath, dpi=dpi)
 end
 

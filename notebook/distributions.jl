@@ -6,7 +6,7 @@ using InteractiveUtils
 
 # ╔═╡ 7f21b56a-7415-11eb-1da1-c51dc8846ce3
 begin
-	using GRN
+	using CDGRN
 	using DataFrames
 	using CSV
 	using JLD2
@@ -23,7 +23,7 @@ md"## Load data"
 
 # ╔═╡ a7ed5576-7415-11eb-31c1-550fdf692958
 begin
-	dir = joinpath(GRN.PROJECT_PATH, "results")
+	dir = joinpath(CDGRN.PROJECT_PATH, "results")
 	prof = load_data(dir)
 	add_unspliced_data!(prof, dir)
 	add_velocity!(prof, dir)
@@ -63,8 +63,8 @@ md"### Correction by normal distribution"
 
 # ╔═╡ 63a2a626-757f-11eb-1c67-43eb91ea3767
 begin
-	dt = GRN.fit(DistributionTransformation, Gamma, nonzero_xs)
-	zs = GRN.transform(dt, nonzero_xs)
+	dt = CDGRN.fit(DistributionTransformation, Gamma, nonzero_xs)
+	zs = CDGRN.transform(dt, nonzero_xs)
 	normal = dt.dst
 	plot(layer(x->pdf(normal, x), 0, 2.5, color=[colorant"black"]),
 		 layer(x=zs, Geom.histogram(density=true)),

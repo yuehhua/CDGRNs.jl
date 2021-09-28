@@ -1,4 +1,4 @@
-using GRN
+using CDGRN
 using DataFrames
 using Distances
 using CSV
@@ -11,7 +11,7 @@ using StatsPlots
 plotly()
 default(size = (800, 600))
 
-dir = joinpath(GRN.PROJECT_PATH, "results")
+dir = joinpath(CDGRN.PROJECT_PATH, "results")
 prof = load_data(dir)
 add_unspliced_data!(prof, dir)
 add_velocity!(prof, dir)
@@ -81,7 +81,7 @@ trainX = Array(df[:, 3:end])'
 # df.UMAP2 = embedding[2, :]
 
 # @df df scatter(:UMAP1, :UMAP2, group=:Cell, xlabel="UMAP1", ylabel="UMAP2")
-# savefig(joinpath(GRN.PROJECT_PATH, "pics", folder_name, "umap12-cell type.svg"))
+# savefig(joinpath(CDGRN.PROJECT_PATH, "pics", folder_name, "umap12-cell type.svg"))
 
 
 n_components = 3
@@ -91,4 +91,4 @@ df.UMAP2 = embedding[2, :]
 df.UMAP3 = embedding[3, :]
 
 @df df scatter(:UMAP1, :UMAP2, :UMAP3, group=:Cell, xlabel="UMAP1", ylabel="UMAP2", zlabel="UMAP3")
-savefig(joinpath(GRN.PROJECT_PATH, "pics", folder_name, "umap123-cell type.html"))
+savefig(joinpath(CDGRN.PROJECT_PATH, "pics", folder_name, "umap123-cell type.html"))

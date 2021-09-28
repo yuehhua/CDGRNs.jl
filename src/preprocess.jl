@@ -9,11 +9,11 @@ function make_graph(data::DataFrame, encoding::Dict, graph_size::Int, n::Int=nro
     dg
 end
 
-function get_regulation_expr(prof::Profile, tfs::Profile, true_reg::DataFrame)
+function get_regulation_expr(prof::Profile, tfs::Profile, true_reg::DataFrame; labels=:clusters)
     tf_list = unique(true_reg.tf)
     gene_list = unique(true_reg.target)
     
-    df = DataFrame(cell=prof.obs.clusters, time=prof.obs.latent_time)
+    df = DataFrame(cell=prof.obs[!,labels], time=prof.obs.latent_time)
     for gene in gene_list
         df[:, Symbol(gene * "_u")] = vec(get_gene_expr(prof, gene, :Mu))
     end

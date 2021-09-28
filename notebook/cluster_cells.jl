@@ -1,4 +1,4 @@
-using GRN
+using CDGRN
 using DataFrames
 using FileIO
 using JLD2
@@ -10,7 +10,7 @@ using Distances
 
 ## Load data
 
-dir = joinpath(GRN.PROJECT_PATH, "results")
+dir = joinpath(CDGRN.PROJECT_PATH, "results")
 prof = load_data(dir)
 add_unspliced_data!(prof, dir)
 add_velocity!(prof, dir)
@@ -34,7 +34,7 @@ end
 
 data = Array(cell_clusters[:, 3:end])
 D = pairwise(Hamming(), data, dims=1)
-GRN.clustermap(D, cell_clusters.Cell, filename="clustermap (total)")
+CDGRN.clustermap(D, cell_clusters.Cell, filename="clustermap (total)")
 
 
 # map to curated TF-target database
@@ -42,7 +42,7 @@ GRN.clustermap(D, cell_clusters.Cell, filename="clustermap (total)")
 ## unit: component
 cor_pairs = map(x -> (tf=x[:tf_name], target=x[:gene_name], best_k=x[:best_k], corr=correlation(x[:model])), nonsingle_pairs)
 cor_pairs = flatten(DataFrame(cor_pairs), :corr)
-cor_pairs.adjusted_corr = GRN.fisher_transform(cor_pairs.corr)
+cor_pairs.adjusted_corr = CDGRN.fisher_transform(cor_pairs.corr)
 
 reg_pairs = Set(map(i -> (regulations[i,:tf], regulations[i,:target]), 1:nrow(regulations)))
 
@@ -63,19 +63,19 @@ end
 
 data = Array(cell_clusters[:, 3:end])
 D = pairwise(Hamming(), data, dims=1)
-GRN.clustermap(D, cell_clusters.Cell, filename="clustermap_true_regulations (total)")
+CDGRN.clustermap(D, cell_clusters.Cell, filename="clustermap_true_regulations (total)")
 
 
 # Use true regulation pairs for PCA
 
 tfs = copy(prof)
 
-GRN.filter_genes!(prof)
+CDGRN.filter_genes!(prof)
 vars = prof.var
 u = prof.layers[:Mu]
 
-tf_set = GRN.load_tfs(joinpath(dir, "tf_set.jld2"))
-GRN.filter_tfs!(tfs, tf_set)
+tf_set = CDGRN.load_tfs(joinpath(dir, "tf_set.jld2"))
+CDGRN.filter_tfs!(tfs, tf_set)
 tf_vars = tfs.var
 tf_s = tfs.layers[:Ms]
 
@@ -104,16 +104,16 @@ using StatsPlots
 plotly()
 
 p = @df df scatter(:PC1, :PC2, :PC3, group=:Cell, xlabel="PC1", ylabel="PC2", zlabel="PC3")
-filepath = joinpath(GRN.PROJECT_PATH, "pics", "tf-gene gmm model", "PCA", "pc123-cell type_true reg.html")
+filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "PCA", "pc123-cell type_true reg.html")
 savefig(p, filepath)
 
 p = @df df scatter(:PC1, :PC2, :PC3, zcolor=:time, c=:coolwarm, xlabel="PC1", ylabel="PC2", zlabel="PC3")
-filepath = joinpath(GRN.PROJECT_PATH, "pics", "tf-gene gmm model", "PCA", "pc123-latent time_true reg.html")
+filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "PCA", "pc123-latent time_true reg.html")
 savefig(p, filepath)
 
 
-col_colors = GRN.generate_column_colors(cell_clusters.Cell)
+col_colors = CDGRN.generate_column_colors(cell_clusters.Cell)
 col_colors = map(x -> RGB(x...), col_colors)
 p = @df df scatter(:PC1, :PC2, :PC3, color=col_colors, xlabel="PC1", ylabel="PC2", zlabel="PC3")
-filepath = joinpath(GRN.PROJECT_PATH, "pics", "tf-gene gmm model", "clustering", "PCA with clustermap color labels.html")
+filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "clustering", "PCA with clustermap color labels.html")
 savefig(p, filepath)

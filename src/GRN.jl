@@ -1,4 +1,4 @@
-module GRN
+module CDGRN
 
 using GaussianMixtures: GaussianMixture, size
 using LinearAlgebra

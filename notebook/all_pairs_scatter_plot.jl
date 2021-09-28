@@ -7,14 +7,14 @@ using Gadfly
 using JLD2
 using MLDataUtils
 
-using GRN
+using CDGRN
 using SnowyOwl
 
 Gadfly.set_default_plot_size(8inch, 6inch)
 
 ## Load data
 
-dir = joinpath(GRN.PROJECT_PATH, "results")
+dir = joinpath(CDGRN.PROJECT_PATH, "results")
 prof = load_data(dir)
 add_unspliced_data!(prof, dir)
 add_velocity!(prof, dir)
@@ -65,7 +65,7 @@ Threads.@threads for i = 1:nrow(vars)
             Guide.xlabel("log1p spliced RNA of TF gene, $(tf_name)"),
             Guide.ylabel("log1p unspliced RNA of target gene, $(gene_name)"),
         )
-        p |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "all pair tf-gene", "$(tf_name)-$(gene_name) log plot.svg"), 10inch, 6inch)
+        p |> SVG(joinpath(CDGRN.PROJECT_PATH, "pics", "all pair tf-gene", "$(tf_name)-$(gene_name) log plot.svg"), 10inch, 6inch)
         sleep(1)
 
         @info "$(tf_name) - $(gene_name) plot"
