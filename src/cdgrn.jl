@@ -15,13 +15,13 @@ function query_pairset(corr_pairs::DataFrame, reg_pairs::Set)
     return map(x -> x in reg_pairs, query_pairs)
 end
 
-struct CDGRN{T,S}
+struct ContextDependentGRN{T,S}
     models::Dict{Symbol,T}
     tfs::Dict{Symbol,S}
     scores::DataFrame
 end
 
-function train(::Type{CDGRN}, tfs::Profile, prof::Profile, pairs::DataFrame, context; target::Symbol=:target, unspliced=true)
+function train(::Type{ContextDependentGRN}, tfs::Profile, prof::Profile, pairs::DataFrame, context; target::Symbol=:target, unspliced=true)
     M = unspliced ? :Mu : :Ms
     targets = unique(pairs[!, target])
     models = []
@@ -36,10 +36,10 @@ function train(::Type{CDGRN}, tfs::Profile, prof::Profile, pairs::DataFrame, con
     res1 = Dict(map(x -> Symbol(x[1])=>x[2], zip(targets, models)))
     res2 = Dict(map(x -> Symbol(x[1])=>Symbol.(x[2]), zip(targets, tf_sets)))
     scores = DataFrame(target=Symbol[], adjR2=Float64[])
-    return CDGRN(res1, res2, scores)
+    return ContextDependentGRN(res1, res2, scores)
 end
 
-function train(::Type{CDGRN}, tfs::Profile, prof::Profile, pairs::DataFrame; target::Symbol=:target)
+function train(::Type{ContextDependentGRN}, tfs::Profile, prof::Profile, pairs::DataFrame; target::Symbol=:target)
     targets = unique(pairs[!, target])
     models = []
     tf_sets = []
@@ -53,10 +53,10 @@ function train(::Type{CDGRN}, tfs::Profile, prof::Profile, pairs::DataFrame; tar
     res1 = Dict(map(x -> Symbol(x[1])=>x[2], zip(targets, models)))
     res2 = Dict(map(x -> Symbol(x[1])=>Symbol.(x[2]), zip(targets, tf_sets)))
     scores = DataFrame(target=Symbol[], adjR2=Float64[])
-    return CDGRN(res1, res2, scores)
+    return ContextDependentGRN(res1, res2, scores)
 end
 
-function evaluate!(grn::CDGRN)
+function evaluate!(grn::ContextDependentGRN)
     for k in keys(grn.models)
         adjR2 = adjr²(grn.models[k])
         if 0. ≤ adjR2 ≤ 1.0
@@ -89,7 +89,7 @@ function cor(tfs::Profile, prof::Profile, pairs::Vector, clusters::Vector{<:Inte
     return df[not_nan, :]
 end
 
-function cor(cdgrn::CDGRN, tfs::Profile, prof::Profile, context::BitVector; unspliced=true)
+function cor(cdgrn::ContextDependentGRN, tfs::Profile, prof::Profile, context::BitVector; unspliced=true)
     M = unspliced ? :Mu : :Ms
     cond = unspliced ? :context : :spliced
     df = DataFrame(tf=Symbol[], target=Symbol[], ρ=Float64[], condition=Symbol[])
@@ -107,7 +107,7 @@ function cor(cdgrn::CDGRN, tfs::Profile, prof::Profile, context::BitVector; unsp
     return df
 end
 
-function cor(cdgrn::CDGRN, tfs::Profile, prof::Profile; nsample=SnowyOwl.nobs(prof))
+function cor(cdgrn::ContextDependentGRN, tfs::Profile, prof::Profile; nsample=SnowyOwl.nobs(prof))
     df = DataFrame(tf=Symbol[], target=Symbol[], ρ=Float64[], condition=Symbol[])
     idx = (nsample == SnowyOwl.nobs(prof)) ? Colon() : StatsBase.sample(collect(1:SnowyOwl.nobs(prof)), nsample)
     for targ in cdgrn.scores.target
@@ -156,7 +156,7 @@ end
 
 cor(x::AbstractVector, y::AbstractVector, zs...) = [cor(x, y), cor(x, zs...)...]
 
-function partial_corr(cdgrn::CDGRN, tfs::Profile, prof::Profile, context; unspliced=true)
+function partial_corr(cdgrn::ContextDependentGRN, tfs::Profile, prof::Profile, context; unspliced=true)
     M = unspliced ? :Mu : :Ms
     df = DataFrame(tf=Symbol[], target=Symbol[], ρ=Float64[], dof=Int[])
     for targ in cdgrn.scores.target
@@ -187,7 +187,7 @@ function max_cor(context_cor::DataFrame, nclst::Int)
     return context_ρs, selected_context
 end
 
-function partial_corr(cdgrn::CDGRN, tfs::Profile, prof::Profile)
+function partial_corr(cdgrn::ContextDependentGRN, tfs::Profile, prof::Profile)
     df = DataFrame(tf=Symbol[], target=Symbol[], ρ=Float64[], dof=Int[])
     for targ in cdgrn.scores.target
         tf_set = cdgrn.tfs[targ]
@@ -275,19 +275,30 @@ function partial_corr(vs::AbstractVector, ws::AbstractVector, xs::AbstractVector
     return ρvw_xyz, ρvx_wyz, ρvy_wxz, ρvz_wxy
 end
 
+cor2dist(ρ::Real) = sqrt(2*(1-ρ))
+
 function to_graph(part_cor::DataFrame; src=:tf, dst=:target,
-                  nodes=unique!(vcat(part_cor[:,src], part_cor.target[:,dst])))
-    g = MetaDiGraph(length(nodes))
+                  nodes=unique!(vcat(part_cor[:,src], part_cor[:,dst])))
+    g = SimpleWeightedDiGraph(length(nodes))
     for row in eachrow(part_cor)
         i = findfirst(nodes .== row[src])
         j = findfirst(nodes .== row[dst])
-        add_edge!(g, i, j, :edge_width, row.ρ)
+        add_edge!(g, i, j, row.dist)
     end
     return g
 end
 
 function network_entropy(g::AbstractGraph)
-    d = degree(g)
-    N = length(d)
-    return sum(log, d) / (N * log(N - 1))
+    d = vec(sum(LightGraphs.weights(g), dims=1))
+    replace!(d, 0=>eps(0.0))
+    N = nv(g)
+    return sum(log, d) / (N * log(maximum(d)))
 end
+
+# function network_entropy(g::AbstractGraph)
+#     d = indegree(g)
+#     w = vec(sum(LightGraphs.weights(g), dims=1))
+#     S = d ./ w .* log.(w)
+#     H = S ./ maximum(S)
+#     return mean(H)
+# end

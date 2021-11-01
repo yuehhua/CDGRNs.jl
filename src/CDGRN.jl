@@ -28,20 +28,6 @@ import StatsBase: dof, nobs, fit!
 const PROJECT_PATH = dirname(@__DIR__)
 
 export
-    # distributions
-    DistributionTransformation,
-    fit,
-    transform,
-    transform!,
-    fit_transform,
-
-    # layers
-    Concentration,
-    GeneRegulatory,
-    update_batch_edge,
-    apply_batch_message,
-    propagate,
-
     # data
     load_data,
     add_unspliced_data!,
@@ -112,13 +98,14 @@ export
 
     # cdgrn
     corr_table,
-    CDGRN,
+    ContextDependentGRN,
     train,
-    evaluate!
+    evaluate!,
+    cor2dist,
+    to_graph,
+    network_entropy
 
 
-include("distributions.jl")
-include("layers.jl")
 include("data.jl")
 include("preprocess.jl")
 include("utils.jl")

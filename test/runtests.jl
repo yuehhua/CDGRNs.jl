@@ -1,15 +1,10 @@
-using GRN
-using GeometricFlux
-using Flux
-using GraphSignals
+using CDGRN
 using DataFrames
 using CSV
 using SnowyOwl
-using Zygote
 using Test
 
 tests = [
-    "layers",
     "data",
     "regression",
     "metrics",
