@@ -37,15 +37,7 @@ filter_genes(prof::Profile; kwargs...) = filter_genes!(copy(prof); kwargs...)
 
 function filter_genes!(prof::Profile; min_likelihood=0.1)
     select_likelihood = x -> !ismissing(x) && x .≥ min_likelihood
-    selected_rows = select_likelihood.(prof.var.fit_likelihood)
-
-    filter!(:fit_likelihood => select_likelihood, prof.var)
-    prof.data = prof.data[selected_rows, :]
-    prof.layers[:Mu] = prof.layers[:Mu][selected_rows, :]
-    prof.layers[:velocity_u] = prof.layers[:velocity_u][selected_rows, :]
-    prof.layers[:Ms] = prof.layers[:Ms][selected_rows, :]
-    prof.layers[:velocity] = prof.layers[:velocity][selected_rows, :]
-    prof
+    return filter!(:fit_likelihood => select_likelihood, prof)
 end
 
 load_tfs(filepath::String) = load(filepath, "tf_set")
@@ -71,4 +63,14 @@ function filter_tfs!(prof::Profile, tf_set)
     prof.layers[:Ms] = prof.layers[:Ms][selected_rows, :]
     prof.layers[:velocity] = prof.layers[:velocity][selected_rows, :]
     return prof
+end
+
+function load_CHEA(dirpath::String)
+    data_path = joinpath(dirpath, "data")
+    filepath = joinpath(data_path, "gene_attribute_edges.txt")
+    data = CSV.File(filepath, delim="\t") |> DataFrame
+    regulations = DataFrame()
+    regulations.tf = data.target[2:end]
+    regulations.target = data.source[2:end]
+    return regulations
 end

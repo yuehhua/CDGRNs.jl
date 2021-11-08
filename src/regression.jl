@@ -164,4 +164,5 @@ function correlation(xs::AbstractVector, ys::AbstractVector, cluster::AbstractVe
     return ρs
 end
 
-fisher_transform(ρs::AbstractVector) = sqrt(length(ρs)-3) .* atanh.(ρs)
+fisher_transform(ρs::AbstractVector, df::Integer=length(ρs)-3) = sqrt(df) .* atanh.(ρs)
+fisher_transform(ρs::AbstractVector, dfs::AbstractVector) = sqrt.(dfs) .* atanh.(ρs)

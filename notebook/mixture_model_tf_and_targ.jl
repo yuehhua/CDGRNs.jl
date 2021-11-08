@@ -6,7 +6,7 @@ using InteractiveUtils
 
 # ╔═╡ eca4ba0e-7282-11eb-3e16-db7f1b073b14
 begin
-	using GRN
+	using CDGRN
 	using DataFrames
 	using CSV
 	using JLD2
@@ -38,7 +38,7 @@ md"## Load data"
 
 # ╔═╡ ff7bc440-7284-11eb-2e0a-7f7e6a40f1ca
 begin
-	dir = joinpath(GRN.PROJECT_PATH, "results")
+	dir = joinpath(CDGRN.PROJECT_PATH, "results")
 	prof = load_data(dir)
 	add_unspliced_data!(prof, dir)
 	add_velocity!(prof, dir)
@@ -146,7 +146,7 @@ p3 = plot(
 )
 
 # ╔═╡ f19d5fbf-eb39-4596-9118-e5e85b787b6f
-p3 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene model", "$(tf_vars[j, :index])-$(vars[i, :index]) log plot.svg"), 8inch, 6inch)
+p3 |> SVG(joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene model", "$(tf_vars[j, :index])-$(vars[i, :index]) log plot.svg"), 8inch, 6inch)
 
 # ╔═╡ 81e445de-d4f8-4c83-984c-1ebfc53f9f85
 p4 = plot(
@@ -158,7 +158,7 @@ p4 = plot(
 )
 
 # ╔═╡ 6d87de92-3b9d-477d-bee1-523a4d981c20
-p4 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene model", "$(tf_vars[j, :index])-$(vars[i, :index]) log plot-predict.svg"), 8inch, 6inch)
+p4 |> SVG(joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene model", "$(tf_vars[j, :index])-$(vars[i, :index]) log plot-predict.svg"), 8inch, 6inch)
 
 # ╔═╡ Cell order:
 # ╟─6e36a6d2-86d2-11eb-210a-b5589313a599

@@ -18,7 +18,7 @@ d = 5
     @test size(design_matrix(x)) == (n, 2)
     @test design_matrix(x)[:, 1] == ones(T, length(x))
 
-    model = GRN.fit(LinearRegression, x, y)
+    model = CDGRN.fit(LinearRegression, x, y)
     model_true = lm(@formula(Y ~ X), df)
     @test size(model.β) == (2,)
     @test model.β ≈ GLM.coef(model_true)

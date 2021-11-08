@@ -1,6 +1,6 @@
 using Logging
 
-using GRN
+using CDGRN
 using DataFrames
 using CSV
 using FileIO
@@ -16,7 +16,7 @@ Gadfly.set_default_plot_size(8inch, 6inch)
 
 ## Load data
 
-dir = joinpath(GRN.PROJECT_PATH, "results")
+dir = joinpath(CDGRN.PROJECT_PATH, "results", "pancreas")
 prof = load_data(dir)
 add_unspliced_data!(prof, dir)
 add_velocity!(prof, dir)
@@ -24,12 +24,12 @@ add_moments!(prof, dir)
 
 tfs = copy(prof)
 
-GRN.filter_genes!(prof)
+CDGRN.filter_genes!(prof)
 vars = prof.var
 u = prof.layers[:Mu]
 
-tf_set = GRN.load_tfs(joinpath(dir, "tf_set.jld2"))
-GRN.filter_tfs!(tfs, tf_set)
+tf_set = CDGRN.load_tfs(joinpath(dir, "tf_set.jld2"))
+CDGRN.filter_tfs!(tfs, tf_set)
 tf_vars = tfs.var
 tf_s = tfs.layers[:Ms]
 
@@ -84,7 +84,7 @@ tf_s = tfs.layers[:Ms]
 #     Guide.xlabel("log spliced RNA of TF gene, $(tf_name)"),
 #     Guide.ylabel("log unspliced RNA of target gene, $(gene_name)"),
 # )
-# p3 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene gmm model", "$(tf_name)-$(gene_name) log likelihood plot.svg"), 10inch, 6inch)
+# p3 |> SVG(joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "$(tf_name)-$(gene_name) log likelihood plot.svg"), 10inch, 6inch)
 
 
 # cluster plot
@@ -95,7 +95,7 @@ tf_s = tfs.layers[:Ms]
 #     Guide.xlabel("log spliced RNA of TF gene, $(tf_name)"),
 #     Guide.ylabel("log unspliced RNA of target gene, $(gene_name)"),
 # )
-# p4 |> SVG(joinpath(GRN.PROJECT_PATH, "pics", "tf-gene gmm model", "$(tf_name)-$(gene_name) log cluster plot.svg"), 10inch, 6inch)
+# p4 |> SVG(joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "$(tf_name)-$(gene_name) log cluster plot.svg"), 10inch, 6inch)
 
 
 # ----------------------------------------------------
@@ -108,7 +108,7 @@ function log_likelihood_plot(df, tf_name, gene_name, mix_logpdf;
     coord = Coord.cartesian(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)
     xlabel = "log spliced RNA of TF gene, $(tf_name)"
     ylabel = "log unspliced RNA of target gene, $(gene_name)"
-    filepath = joinpath(GRN.PROJECT_PATH, "pics", "tf-gene gmm model", "$(tf_name)-$(gene_name) log likelihood plot.svg")
+    filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "$(tf_name)-$(gene_name) log likelihood plot.svg")
     plot(l1, l2, coord, Guide.xlabel(xlabel), Guide.ylabel(ylabel)) |> SVG(filepath, 10inch, 6inch)
 end
 
@@ -118,7 +118,7 @@ function cluster_plot(df, tf_name, gene_name; xmax=ceil(maximum(df.logX)), xmin=
     coord = Coord.cartesian(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)
     xlabel = "log spliced RNA of TF gene, $(tf_name)"
     ylabel = "log unspliced RNA of target gene, $(gene_name)"
-    filepath = joinpath(GRN.PROJECT_PATH, "pics", "tf-gene gmm model", "$(tf_name)-$(gene_name) log cluster plot.svg")
+    filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "$(tf_name)-$(gene_name) log cluster plot.svg")
     plot(l, coord, Guide.xlabel(xlabel), Guide.ylabel(ylabel)) |> SVG(filepath, 10inch, 6inch)
 end
 

@@ -6,7 +6,7 @@ using InteractiveUtils
 
 # ╔═╡ 7c99d08e-86b2-11eb-3cb5-d353290a2cb5
 begin
-	using GRN
+	using CDGRN
 	using DataFrames
 	using CSV
 	using JLD2
@@ -28,7 +28,7 @@ html"""
 md"# Difference between before/after imputed data"
 
 # ╔═╡ 29787ac4-86b3-11eb-3f67-99cfcf40165e
-dir = joinpath(GRN.PROJECT_PATH, "results")
+dir = joinpath(CDGRN.PROJECT_PATH, "results")
 
 # ╔═╡ f756eb18-86b2-11eb-2c36-171f5ff2f899
 begin
