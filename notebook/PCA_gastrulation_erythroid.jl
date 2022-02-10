@@ -43,10 +43,7 @@ true_regulations = cor_pairs[cor_pairs.is_regulation, :]
 true_reg_pairs = filter(x -> (uppercase(x[:tf_name]), uppercase(x[:gene_name])) in reg_pairs, nonsingle_pairs)
 
 df = get_regulation_expr(prof, tfs, true_regulations, labels=:celltype)
-trainX = Array(df[:, 3:end])'
-
-model = fit(PCA, trainX; maxoutdim=5)
-pc = MultivariateStats.transform(model, trainX)'
+pc = CDGRN.pca_transform(Array(df[:, 3:end])', dims=5)
 df.PC1 = pc[:, 1]
 df.PC2 = pc[:, 2]
 df.PC3 = pc[:, 3]
