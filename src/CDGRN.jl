@@ -12,14 +12,13 @@ using DataFrames
 using Distances
 using Distributions
 using FileIO: load
-using LightGraphs: SimpleDiGraph, add_edge!
+using Graphs
 using MultivariateStats
 using PyCall
 using SnowyOwl
 using StatsBase
 using Colors
 using Plots
-using LightGraphs
 
 import Statistics: std, cor
 import GLM: fit, predict, coef, stderror, loglikelihood, dof, nobs
@@ -54,7 +53,7 @@ export
     assign_clusters,
 
     # regression
-    LinearRegression,
+    # LinearRegression,
     AbstractGMR,
     NullGMR,
     GMR,
@@ -71,13 +70,13 @@ export
     correlation,
 
     # mixture
-    MixtureRegression,
-    hard_split,
-    probabilistic_split,
-    maximize_likelihood!,
-    update_expectation!,
-    fit!,
-    fit,
+    # MixtureRegression,
+    # hard_split,
+    # probabilistic_split,
+    # maximize_likelihood!,
+    # update_expectation!,
+    # fit!,
+    # fit,
 
     # metrics
     loglikelihood,

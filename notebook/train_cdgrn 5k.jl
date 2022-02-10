@@ -8,16 +8,109 @@ using Clustering
 using StatsBase, Statistics
 using HypothesisTests
 using Gadfly
-import Cairo
+# import Cairo
+
+function load_profile(dir::String)
+    prof = load_data(dir)
+    add_unspliced_data!(prof, dir)
+    add_velocity!(prof, dir)
+    add_moments!(prof, dir)
+    return prof
+end
+
+function regulation_correlation(filename)
+    total_results = load(filename, "total_results")
+    nonsingle_pairs = filter(x -> x[:best_k] != 1, total_results)
+    cor_pairs = corr_table(nonsingle_pairs)
+    cor_pairs.is_tf = cor_pairs.tf .== cor_pairs.target
+    return cor_pairs, nonsingle_pairs
+end
+
+function remove_spurious_pairs(cor_pairs, nonsingle_pairs)
+    # map to database
+    database = load_CHEA(joinpath(CDGRN.PROJECT_PATH, "CHEA"))
+    pairset = CDGRN.make_pairset(database)
+    cor_pairs.is_regulation = CDGRN.query_pairset(cor_pairs, pairset)
+    true_regulations = cor_pairs[cor_pairs.is_regulation .& .!cor_pairs.is_tf, :]
+    true_reg_pairs = filter(x -> (uppercase(x[:tf_name]), uppercase(x[:gene_name])) in pairset, nonsingle_pairs)
+    return true_regulations, true_reg_pairs
+end
+
+function build_tree(prof, true_reg_pairs; linkage=:ward, save=nothing)
+    features = DataFrame(cell=prof.obs.clusters, time=prof.obs.latent_time)
+    for res in true_reg_pairs
+        colname = res[:tf_name] * "_" * res[:gene_name]
+        features[!, colname] = res[:clusters]
+    end
+    
+    data = Array(features[:, 3:end])
+    D = pairwise(Hamming(), data, dims=1)
+    tree = hclust(D, linkage=linkage, branchorder=:optimal)
+    isnothing(save) || CDGRN.clustermap(D, features.cell, filename=save)
+    return tree, features
+end
+
+function extract_context!(cell_clusters, tree, k)
+    cell_clusters[:, Symbol("k$k")] = cutree(tree; k=k)
+    return cell_clusters
+end
+
+function context_correlation(tfs, prof, true_regulations, context, k)
+    pairs = unique(zip(true_regulations.tf, true_regulations.target))
+    context_cor = CDGRN.cor(tfs, prof, pairs, context)
+    context_pairs = collect(zip(context_cor.tf, context_cor.target))
+    context_cor[!, :context], selected_context = CDGRN.max_cor(context_cor, k)
+    return context_cor, selected_context, context_pairs
+end
+
+function test_pmf(ρ1, ρ2, condition1, condition2; α=0.7, bincount=30, plot_dir=nothing, title="")
+    test_result = MannWhitneyUTest(abs.(ρ1), abs.(ρ2))
+
+    if !isnothing(plot_dir)
+        ρ = vcat(ρ1, ρ2)
+        condition = vcat(repeat([condition1], length(ρ1)), repeat([condition2], length(ρ2)))
+        plot_df = DataFrame(ρ=ρ, condition=condition)
+        plot_df[!,:alpha] .= α
+
+        Gadfly.with_theme(style(grid_line_style=:solid)) do
+            p = plot(
+                plot_df, x=:ρ, color=:condition, alpha=:alpha,
+                Geom.histogram(position=:identity, bincount=bincount),
+                Guide.xlabel("TF-target pair correlation")
+            )
+            draw(SVG(joinpath(plot_dir, "histogram_$(title).svg"), 6inch, 4inch), p)
+            draw(PNG(joinpath(plot_dir, "histogram_$(title).png"), 6inch, 4inch), p)
+        end
+    end
+    return test_result
+end
+
+function test_cdf(ρ1, ρ2, condition1, condition2; step=0.1, plot_dir=nothing, title="")
+    test_result = ApproximateTwoSampleKSTest(ρ1, ρ2)
+
+    if !isnothing(plot_dir)
+        r = -1.0:step:1.0
+        cntx_cdf = DataFrame(x=r, y=ecdf(ρ1)(r), condition=condition1)
+        global_cdf = DataFrame(x=r, y=ecdf(ρ2)(r), condition=condition2)
+        cdf_df = vcat(cntx_cdf, global_cdf)
+
+        Gadfly.with_theme(style(grid_line_style=:solid)) do
+            p = plot(
+                cdf_df, x=:x, y=:y, color=:condition,
+                Geom.step, Guide.xlabel("TF-target pair correlation"),
+                Guide.yticks(ticks=[0., 0.25, 0.5, 0.75, 1.])
+            )
+            draw(SVG(joinpath(plot_dir, "cdf_$(title).svg"), 6inch, 4inch), p)
+            draw(PNG(joinpath(plot_dir, "cdf_$(title).png"), 6inch, 4inch), p)
+        end
+    end
+    return test_result
+end
 
 ## Load data
 
 dir = joinpath(CDGRN.PROJECT_PATH, "results", "pancreas")
-prof = load_data(dir)
-add_unspliced_data!(prof, dir)
-add_velocity!(prof, dir)
-add_moments!(prof, dir)
-
+prof = load_profile(dir)
 tfs = copy(prof)
 
 CDGRN.filter_genes!(prof)
@@ -30,134 +123,43 @@ tf_vars = tfs.var
 tf_s = tfs.layers[:Ms]
 
 
-# correlation analysis
-
-total_results = load(joinpath(dir, "GMM-model-selection-result.jld2"), "total_results")
-nonsingle_pairs = filter(x -> x[:best_k] != 1, total_results)
-
-# map to curated TF-target database
-
-cor_pairs = corr_table(nonsingle_pairs)
-regulations = load_CHEA("/media/yuehhua/Workbench/Study/Research/PhD/data/CHEA")
-reg_pairs = CDGRN.make_pairset(regulations)
-cor_pairs.is_regulation = CDGRN.query_pairset(cor_pairs, reg_pairs)
-true_regulations = cor_pairs[cor_pairs.is_regulation, :]
-true_reg_pairs = filter(x -> (uppercase(x[:tf_name]), uppercase(x[:gene_name])) in reg_pairs, nonsingle_pairs)
-
-
-# Use true regulation pairs for clustering cells
-
-## hard clustering
-cell_clusters = DataFrame(cell=prof.obs.clusters, time=prof.obs.latent_time)
-for res in true_reg_pairs
-    colname = res[:tf_name] * "_" * res[:gene_name]
-    cell_clusters[!, colname] = res[:clusters]
-end
-
-data = Array(cell_clusters[:, 3:end])
-D = pairwise(Hamming(), data, dims=1)
-hc_col = hclust(D, linkage=:ward, branchorder=:optimal)
-# CDGRN.clustermap(D, cell_clusters.cell, filename="clustermap_true_regulations (total)")
-
-# Cut tree
+filename = joinpath(dir, "GMM-model-selection-result.jld2")
+cor_pairs, nonsingle_pairs = regulation_correlation(filename)
+true_regulations, true_reg_pairs = remove_spurious_pairs(cor_pairs, nonsingle_pairs)
 
 k = 5
-cell_clusters.k5 = cutree(hc_col; k=k)
+tree, cell_clusters = build_tree(prof, true_reg_pairs, save="clustermap_pancreatic")
+extract_context!(cell_clusters, tree, k)
 
-# Calculate context-dependent gene regulatory network
+context_cor, selected_context, context_pairs = context_correlation(tfs, prof, true_regulations, cell_clusters.k5, k)
+global_ρs = CDGRN.global_cor(tfs, prof, context_pairs, map(x -> x.size, context_cor.context))
 
-pairs = unique(zip(true_regulations.tf, true_regulations.target))
-context_cor = CDGRN.cor(tfs, prof, pairs, cell_clusters.k5)
-context_pairs = collect(zip(context_cor.tf, context_cor.target))
-context_ρs, selected_context = CDGRN.max_cor(context_cor, k)
-context_cor[!, :context] = context_ρs
+# Compare context and global
 
-
-# global
-
-global_ρs = CDGRN.global_cor(tfs, prof, context_pairs, map(x -> x.size, context_ρs))
 test_df = innerjoin(context_cor, global_ρs, on=[:tf, :target], makeunique=true)
-test_df.global_ρ = map(x -> x.ρ, test_df.global)
-test_df.global_size = map(x -> x.size, test_df.global)
-test_df.context_ρ = map(x -> x.ρ, test_df.context)
-test_df.context_size = map(x -> x.size, test_df.context)
-plot_df = DataFrame(
-    ρ=vcat(test_df.context_ρ, test_df.global_ρ),
-    condition=vcat(repeat([:context], length(test_df.context_ρ)), repeat([:global], length(test_df.global_ρ))),
-)
-plot_df[!,:alpha] .= 0.7
-
-bincount = 30
-Gadfly.with_theme(style(grid_line_style=:solid)) do
-    p = plot(plot_df, x=:ρ, color=:condition, alpha=:alpha,
-            Geom.histogram(position=:identity, bincount=bincount), Guide.xlabel("TF-target pair correlation"))
-    draw(SVG("pics/tf-gene gmm model/CDGRN/context-global histogram.svg", 6inch, 4inch), p)
-    draw(PNG("pics/tf-gene gmm model/CDGRN/context-global histogram.png", 6inch, 4inch), p)
-end
-MannWhitneyUTest(abs.(test_df.context_ρ), abs.(test_df.global_ρ))
-
-## KS test
-r = -1.0:0.1:1.0
-cntx_cdf = ecdf(test_df.context_ρ)
-cntx_cdf = DataFrame(x=r, y=cntx_cdf(r), condition=:context)
-global_cdf = ecdf(test_df.global_ρ)
-global_cdf = DataFrame(x=r, y=global_cdf(r), condition=:global)
-cdf_df = vcat(cntx_cdf, global_cdf)
-Gadfly.with_theme(style(grid_line_style=:solid)) do
-    p = plot(cdf_df, x=:x, y=:y, color=:condition,
-            Geom.step, Guide.xlabel("TF-target pair correlation"), Guide.yticks(ticks=[0., 0.25, 0.5, 0.75, 1.]))
-    draw(SVG("pics/tf-gene gmm model/CDGRN/context-global cdf.svg", 6inch, 4inch), p)
-    draw(PNG("pics/tf-gene gmm model/CDGRN/context-global cdf.png", 6inch, 4inch), p)
-end
-ApproximateTwoSampleKSTest(test_df.context_ρ, test_df.global_ρ)
+context_ρ = map(x -> x.ρ, test_df.context)
+global_ρ = map(x -> x.ρ, test_df.global)
+test_result = test_pmf(context_ρ, global_ρ, "context", "global"; plot_dir="pics/tf-gene gmm model/CDGRN", title="context-global")
+test_result = test_cdf(context_ρ, global_ρ, "context", "global"; plot_dir="pics/tf-gene gmm model/CDGRN", title="context-global")
 
 
-# spliced only
+# Compare spliced only
 
 spliced_ρs = CDGRN.spliced_cor(tfs, prof, context_pairs, cell_clusters.k5, selected_context)
 test_df2 = innerjoin(context_cor, spliced_ρs, on=[:tf, :target], makeunique=true)
 test_df2.spliced_ρ = map(x -> x.ρ, test_df2.spliced)
-test_df2.spliced_size = map(x -> x.size, test_df2.spliced)
 test_df2.context_ρ = map(x -> x.ρ, test_df2.context)
-test_df2.context_size = map(x -> x.size, test_df2.context)
 test_df2 = test_df2[test_df2.tf .!= test_df2.target, :]
 test_df2 = test_df2[.!isnan.(test_df2.spliced_ρ), :]
-plot_df2 = DataFrame(
-    ρ=vcat(test_df2.context_ρ, test_df2.spliced_ρ),
-    condition=vcat(repeat(["unspliced+spliced"], length(test_df2.context_ρ)), repeat(["spliced"], length(test_df2.spliced_ρ))),
-)
-plot_df2[!,:alpha] .= 0.7
-
-bincount = 30
-Gadfly.with_theme(style(grid_line_style=:solid)) do
-    p = plot(plot_df2, x=:ρ, color=:condition, alpha=:alpha,
-             Geom.histogram(position=:identity, bincount=bincount), Guide.xlabel("TF-target pair correlation"))
-    draw(SVG("pics/tf-gene gmm model/CDGRN/unspliced-spliced histogram.svg", 6inch, 4inch), p)
-    draw(PNG("pics/tf-gene gmm model/CDGRN/unspliced-spliced histogram.png", 6inch, 4inch), p)
-end
-MannWhitneyUTest(abs.(test_df2.context_ρ), abs.(test_df2.spliced_ρ))
-
-## KS test
-r = -1.0:0.1:1.0
-cntx_cdf = ecdf(test_df2.context_ρ)
-cntx_cdf = DataFrame(x=r, y=cntx_cdf(r), condition="unspliced+spliced")
-spliced_cdf = ecdf(test_df2.spliced_ρ)
-spliced_cdf = DataFrame(x=r, y=spliced_cdf(r), condition="spliced")
-cdf_df = vcat(cntx_cdf, spliced_cdf)
-Gadfly.with_theme(style(grid_line_style=:solid)) do
-    p = plot(cdf_df, x=:x, y=:y, color=:condition,
-            Geom.step, Guide.xlabel("TF-target pair correlation"), Guide.yticks(ticks=[0., 0.25, 0.5, 0.75, 1.]))
-    draw(SVG("pics/tf-gene gmm model/CDGRN/unspliced-spliced cdf.svg", 6inch, 4inch), p)
-    draw(PNG("pics/tf-gene gmm model/CDGRN/unspliced-spliced cdf.png", 6inch, 4inch), p)
-end
-ApproximateTwoSampleKSTest(test_df2.context_ρ, test_df2.spliced_ρ)
+test_result = test_pmf(test_df2.context_ρ, test_df2.spliced_ρ, "unspliced+spliced", "spliced"; plot_dir="pics/tf-gene gmm model/CDGRN", title="unspliced-spliced")
+test_result = test_cdf(test_df2.context_ρ, test_df2.spliced_ρ, "unspliced+spliced", "spliced"; plot_dir="pics/tf-gene gmm model/CDGRN", title="unspliced-spliced")
 
 
 # Visualize PCA
 
 df = get_regulation_expr(prof, tfs, true_regulations)
-
 trainX = Array(df[:, 3:end])'
+
 p = CDGRN.plot_3d_pca(trainX, cell_clusters.k5)
 filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "cell clusters k5.html")
 savefig(p, filepath)
@@ -169,25 +171,50 @@ countmap(cell_clusters[cell_clusters.k3 .== 3, :cell])
 
 # Train on Ngn3 high EP
 
-context = cell_clusters.k5 .== 3
-context = cell_clusters.k5 .== 5
-context = cell_clusters.k5 .== 4
-context = cell_clusters.k5 .== 1
+cortable = Dict()
+for c in [1, 3, 4, 5]
+    context = cell_clusters.k5 .== c
+    cdgrn = train(ContextDependentGRN, tfs, prof, true_regulations, context)
+    evaluate!(cdgrn)
 
+    context_cor = CDGRN.cor(cdgrn, tfs, prof, context)
+    context_cor = context_cor[.!isnan.(context_cor.ρ), :]
+    context_cor.reg_type = context_cor.ρ .> 0
+    context_cor.reg_stng = abs.(context_cor.ρ)
+    CSV.write(joinpath(dir, "cdgrn_k5", "cdgrn_k5-$(c).csv"), context_cor)
 
-cdgrn = train(CDGRN, tfs, prof, true_regulations, context)
-evaluate!(cdgrn)
+    ## Effective gene set
+    correlated = context_cor[context_cor.reg_stng .≥ 0.3, :]
+    gene_set = DataFrame(gene=unique!(vcat(correlated.tf, correlated.target)))
+    CSV.write(joinpath(dir, "cdgrn_k5", "cdgrn_k5-$(c)_gene_set.csv"), gene_set)
 
-context_cor = CDGRN.cor(cdgrn, tfs, prof, context)
-context_cor = context_cor[.!isnan.(context_cor.ρ), :]
-context_cor.regulation_type = context_cor.ρ .> 0
-context_cor.regulation_strength = abs.(context_cor.ρ)
-CSV.write(joinpath(dir, "cdgrn_k5", "cdgrn_k5-2.csv"), context_cor)
+    ## add gene expression
+    context_cor.tf_s = [mean(vec(get_gene_expr(tfs, String(g), :Ms))[context]) for g in context_cor.tf]
+    context_cor.target_u = [mean(vec(get_gene_expr(prof, String(g), :Mu))[context]) for g in context_cor.target]
+    cortable[c] = context_cor
+end
 
-## Effective gene set
-c = context_cor[context_cor.regulation_strength .≥ 0.3, :]
-gene_set = DataFrame(gene=unique!(vcat(c.tf, c.target)))
-CSV.write(joinpath(dir, "cdgrn_k5", "cdgrn_k5-2_gene_set.csv"), gene_set)
+## join tables
+joined = outerjoin(cortable[1], cortable[3], on=[:tf, :target], renamecols="_cntx1"=>"_cntx3")
+joined = outerjoin(joined, cortable[4], on=[:tf, :target], renamecols=""=>"_cntx4")
+joined = outerjoin(joined, cortable[5], on=[:tf, :target], renamecols=""=>"_cntx5")
+replace!(joined.ρ_cntx1, missing=>0)
+replace!(joined.reg_stng_cntx1, missing=>0)
+replace!(joined.tf_s_cntx1, missing=>0)
+replace!(joined.target_u_cntx1, missing=>0)
+replace!(joined.ρ_cntx3, missing=>0)
+replace!(joined.reg_stng_cntx3, missing=>0)
+replace!(joined.tf_s_cntx3, missing=>0)
+replace!(joined.target_u_cntx3, missing=>0)
+replace!(joined.ρ_cntx4, missing=>0)
+replace!(joined.reg_stng_cntx4, missing=>0)
+replace!(joined.tf_s_cntx4, missing=>0)
+replace!(joined.target_u_cntx4, missing=>0)
+replace!(joined.ρ_cntx5, missing=>0)
+replace!(joined.reg_stng_cntx5, missing=>0)
+replace!(joined.tf_s_cntx5, missing=>0)
+replace!(joined.target_u_cntx5, missing=>0)
+CSV.write(joinpath(dir, "cdgrn_k5", "cdgrn_k5_all.csv"), joined)
 
 l3 = Gadfly.layer(context_cor3, x=:ρ, color=[colorant"blue"], Geom.histogram(position=:identity, density=true))
 l5 = Gadfly.layer(context_cor5, x=:ρ, color=[colorant"orange"], Geom.histogram(position=:identity, density=true))
@@ -201,8 +228,9 @@ CDGRN.network_entropy(sg)
 # Visualize PCA
 
 df = get_regulation_expr(prof, tfs, true_regulations)
-
+df.context = cell_clusters.k5
 trainX = Array(df[:, 3:end])'
+
 p = CDGRN.plot_3d_pca(trainX, df.cell, context)
 filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "cell clusters k3-3.html")
 savefig(p, filepath)

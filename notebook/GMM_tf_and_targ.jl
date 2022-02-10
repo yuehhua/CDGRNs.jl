@@ -1,5 +1,6 @@
 using Logging
 
+using Random
 using CDGRN
 using DataFrames
 using CSV
@@ -13,6 +14,8 @@ using Distributions
 using Clustering
 using Distances
 Gadfly.set_default_plot_size(8inch, 6inch)
+
+RNG_SEED = 10
 
 ## Load data
 
@@ -180,6 +183,7 @@ total_results = []
 splock = Threads.SpinLock()
 Threads.@threads for i = 1:nrow(vars)
     for j = 1:nrow(tf_vars)
+        Random.seed!(RNG_SEED)
         tf_name = tf_vars[j, :index]
         gene_name = vars[i, :index]
 

@@ -10,8 +10,8 @@ gr()
 
 ## Load data
 
-dir = joinpath(CDGRN.PROJECT_PATH, "results", "dentategyrus")
-fig_dir = joinpath(CDGRN.PROJECT_PATH, "pics", "dentategyrus")
+dir = joinpath(CDGRN.PROJECT_PATH, "results", "bonemarrow")
+fig_dir = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow")
 prof = load_data(dir)
 add_unspliced_data!(prof, dir)
 add_velocity!(prof, dir)
@@ -71,12 +71,20 @@ savefig(joinpath(fig_dir, "PCA", "pc13-cell type.png"))
 savefig(joinpath(fig_dir, "PCA", "pc13-latent time.svg"))
 savefig(joinpath(fig_dir, "PCA", "pc13-latent time.png"))
 
+@df df scatter(:PC1, :PC4; group=:cell, xlabel="PC1", ylabel="PC4", color_palette=:glasbey_hv_n256, legend=:outertopright, plot_configs...)
+savefig(joinpath(fig_dir, "PCA", "pc14-cell type.svg"))
+savefig(joinpath(fig_dir, "PCA", "pc14-cell type.png"))
+
+@df df scatter(:PC1, :PC4; zcolor=:time, c=:coolwarm, xlabel="PC1", ylabel="PC4", legend=false, cb=:outerright, plot_configs...)
+savefig(joinpath(fig_dir, "PCA", "pc14-latent time.svg"))
+savefig(joinpath(fig_dir, "PCA", "pc14-latent time.png"))
+
 
 # 3D scatter plot
 plotly()
 plot_configs = (markersize=1, markerstrokewidth=0)
 
-@df df scatter(:PC1, :PC2, :PC3; group=:cell, xlabel="PC1", ylabel="PC2", zlabel="PC3", plot_configs...)
+@df df scatter(:PC1, :PC2, :PC3; group=:cell, xlabel="PC1", ylabel="PC2", zlabel="PC3", color_palette=:glasbey_hv_n256, plot_configs...)
 savefig(joinpath(fig_dir, "PCA", "pc123-cell type.html"))
 
 @df df scatter(:PC1, :PC2, :PC3; zcolor=:time, c=:coolwarm, xlabel="PC1", ylabel="PC2", zlabel="PC3", plot_configs...)
