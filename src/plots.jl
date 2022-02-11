@@ -57,7 +57,8 @@ function plot_regulations(data::DataFrame, x::String, y::String, z::String; mode
     ylabel = "Spliced mRNA of $y"
     zlabel = spliced ? "Spliced mRNA of $z" : "Unspliced mRNA of $z"
     p = scatter(data[:,x_sym], data[:,y_sym], data[:,z_sym], group=data[:,:cell_type],
-                markersize=2, xlabel=xlabel, ylabel=ylabel, zlabel=zlabel)
+                markersize=2, markerstrokewidth=0, dpi=300,
+                xlabel=xlabel, ylabel=ylabel, zlabel=zlabel)
     if !isnothing(model)
         x = range(floor(minimum(data[:,x_sym])), stop=ceil(maximum(data[:,x_sym])), length=100)
         y = range(floor(minimum(data[:,y_sym])), stop=ceil(maximum(data[:,y_sym])), length=100)
@@ -75,7 +76,8 @@ function plot_regulations(data::DataFrame, x::String, y::String; model=nothing, 
     xlabel = "Spliced mRNA of $x"
     ylabel = spliced ? "Spliced mRNA of $y" : "Unspliced mRNA of $y"
     p = scatter(data[:,x_sym], data[:,y_sym], group=data[:,:cell_type],
-                markersize=3, xlabel=xlabel, ylabel=ylabel)
+                markersize=3, markerstrokewidth=0, dpi=300,
+                xlabel=xlabel, ylabel=ylabel)
     if !isnothing(model)
         x = range(floor(minimum(data[:,x_sym])), stop=ceil(maximum(data[:,x_sym])), length=100)
         plot!(p, x, y -> predict(model, [y]'), st=:surface,

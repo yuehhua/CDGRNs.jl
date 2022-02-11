@@ -6,7 +6,7 @@ using Missings
 using SparseArrays
 using Statistics
 
-using Clustering: kmeans, kmedoids, hclust, fuzzy_cmeans, assignments
+using Clustering
 using CSV
 using DataFrames
 using Distances
@@ -19,6 +19,8 @@ using SnowyOwl
 using StatsBase
 using Colors
 using Plots
+using HypothesisTests
+using Gadfly
 
 import Statistics: std, cor
 import GLM: fit, predict, coef, stderror, loglikelihood, dof, nobs
@@ -27,6 +29,17 @@ import StatsBase: dof, nobs, fit!
 const PROJECT_PATH = dirname(@__DIR__)
 
 export
+    # interface
+    load_profile,
+    regulation_correlation,
+    remove_spurious_pairs,
+    build_tree,
+    extract_context!,
+    context_correlation,
+    test_pmf,
+    test_cdf,
+    train_cdgrns,
+
     # data
     load_data,
     add_unspliced_data!,
@@ -34,8 +47,8 @@ export
     add_moments!,
     load_tfs,
     load_CHEA,
-    filter_tfs,
-    filter_tfs!,
+    select_high_likelihood!,
+    select_genes!,
 
     # preprocess
     make_graph,
@@ -118,5 +131,7 @@ include("validation.jl")
 include("plots.jl")
 include("cdgrn.jl")
 include("graph.jl")
+
+include("interface.jl")
 
 end # module

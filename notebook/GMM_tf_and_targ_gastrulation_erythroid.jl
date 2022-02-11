@@ -17,19 +17,15 @@ Gadfly.set_default_plot_size(8inch, 6inch)
 ## Load data
 
 dir = joinpath(CDGRN.PROJECT_PATH, "results", "gastrulation_erythroid")
-prof = load_data(dir)
-add_unspliced_data!(prof, dir)
-add_velocity!(prof, dir)
-add_moments!(prof, dir)
+prof = load_profile(dir)
+tf_set = CDGRN.load_tfs(joinpath(dir, "tf_set.jld2"))
+tfs = select_genes!(copy(prof), tf_set)
 
-tfs = copy(prof)
-
-CDGRN.filter_genes!(prof)
+select_high_likelihood!(prof)
 vars = prof.var
 u = prof.layers[:Mu]
 
-tf_set = CDGRN.load_tfs(joinpath(dir, "tf_set.jld2"))
-CDGRN.filter_tfs!(tfs, tf_set)
+select_high_likelihood!(tfs, min_likelihood=-Inf)
 tf_vars = tfs.var
 tf_s = tfs.layers[:Ms]
 
