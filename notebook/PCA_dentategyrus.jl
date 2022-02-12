@@ -42,7 +42,8 @@ plot_configs = (markersize=2, markerstrokewidth=0, dpi=300)
 savefig(joinpath(fig_dir, "PCA", "pc12-cell type.svg"))
 savefig(joinpath(fig_dir, "PCA", "pc12-cell type.png"))
 
-@df df scatter(:PC1, :PC2; zcolor=:time, c=:coolwarm, xlabel="PC1", ylabel="PC2", legend=false, cb=:outerright, plot_configs...)
+@df df scatter(:PC1, :PC2; zcolor=:time, c=:coolwarm, xlabel="PC1", ylabel="PC2",
+               legend=false, cb=:outerright, markersize=3, markerstrokewidth=0, dpi=300)
 savefig(joinpath(fig_dir, "PCA", "pc12-latent time.svg"))
 savefig(joinpath(fig_dir, "PCA", "pc12-latent time.png"))
 
@@ -50,7 +51,8 @@ savefig(joinpath(fig_dir, "PCA", "pc12-latent time.png"))
 savefig(joinpath(fig_dir, "PCA", "pc13-cell type.svg"))
 savefig(joinpath(fig_dir, "PCA", "pc13-cell type.png"))
 
-@df df scatter(:PC1, :PC3; zcolor=:time, c=:coolwarm, xlabel="PC1", ylabel="PC3", legend=false, cb=:outerright, plot_configs...)
+@df df scatter(:PC1, :PC3; zcolor=:time, c=:coolwarm, xlabel="PC1", ylabel="PC3",
+               legend=false, cb=:outerright, markersize=3, markerstrokewidth=0, dpi=300)
 savefig(joinpath(fig_dir, "PCA", "pc13-latent time.svg"))
 savefig(joinpath(fig_dir, "PCA", "pc13-latent time.png"))
 
@@ -62,5 +64,6 @@ plot_configs = (markersize=1, markerstrokewidth=0)
 @df df scatter(:PC1, :PC2, :PC3; group=:cell, xlabel="PC1", ylabel="PC2", zlabel="PC3", plot_configs...)
 savefig(joinpath(fig_dir, "PCA", "pc123-cell type.html"))
 
-@df df scatter(:PC1, :PC2, :PC3; zcolor=:time, c=:coolwarm, xlabel="PC1", ylabel="PC2", zlabel="PC3", plot_configs...)
+@df df scatter(:PC1, :PC2, :PC3; zcolor=:time, c=:coolwarm, xlabel="PC1", ylabel="PC2", zlabel="PC3",
+               legend=false, cb=:outerright, plot_configs...)
 savefig(joinpath(fig_dir, "PCA", "pc123-latent time.html"))

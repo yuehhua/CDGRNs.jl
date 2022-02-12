@@ -1,17 +1,12 @@
 using Logging
 
 using CDGRN
-using DataFrames
-using CSV
-using FileIO
-using JLD2
 using SnowyOwl
+using DataFrames
+using JLD2
+using FileIO
 using Gadfly
 using Statistics
-using GaussianMixtures
-using Distributions
-using Clustering
-using Distances
 Gadfly.set_default_plot_size(8inch, 6inch)
 
 ## Load data
