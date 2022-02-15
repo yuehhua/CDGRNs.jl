@@ -55,30 +55,29 @@ test_result = test_cdf(test_df2.context_ρ, test_df2.spliced_ρ, "unspliced+spli
 df = get_regulation_expr(prof, tfs, true_regulations)
 p = CDGRN.plot_3d_pca(Array(df[:, 3:end])', cell_clusters.k5)
 filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "cell clusters k5.html")
-# p = CDGRN.plot_3d_pca(Array(df[:, 3:end])', df.cell, context)
-# filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "cell clusters k3-3.html")
+
+context = cell_clusters.k5 .== 1
+p = CDGRN.plot_2d_pca(Array(df[:, 3:end])', df.cell, context)
+filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "cell clusters k5-1.png")
 savefig(p, filepath)
 
 
 # Train CDGRNs over contexts
 
 cortable = train_cdgrns(tfs, prof, true_regulations,
-    cell_clusters.k5, [1, 3, 4, 5],
+    cell_clusters.k5, [1, 2, 3, 4, 5],
     joinpath(dir, "cdgrn_k5"))
 
 
 # Network entropy
 
-# edge count
-nrow(cortable[1])
-#node count
-length(unique(vcat(cortable[1].tf, cortable[1].target)))
-
-cortable[1].dist = cor2dist.(cortable[1].ρ)
-cortable[2].dist = cor2dist.(cortable[2].ρ)
-cortable[3].dist = cor2dist.(cortable[3].ρ)
-g = to_graph(cortable[1])
-network_entropy(g)
+for i in 1:5
+    E = nrow(cortable[i])
+    V = length(unique(vcat(cortable[i].tf, cortable[i].target)))
+    cortable[i].dist = cor2dist.(cortable[i].ρ)
+    entr = network_entropy(to_graph(cortable[i]))
+    println("Context $i:\nnode:\t$V\nedge:\t$E\nentropy:\t$entr")
+end
 
 
 
@@ -150,20 +149,20 @@ p = plot_regulations(data, "Pax6", "Pdx1", target, model=cdgrn.models[Symbol(tar
 filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target.html")
 savefig(p, filepath)
 
-# target = "Naaladl2"
-# data = make_vis_data(target, tfs, prof, true_regulations, cluster=context)
-# p = plot_regulations(data, "Elf5", target)
-# filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target.html")
-# savefig(p, filepath)
-# # spliced
-# p = plot_regulations(data, "Elf5", target, spliced=true)
-# filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target (spliced).html")
-# savefig(p, filepath)
-# # global
-# data = make_vis_data(target, tfs, prof, true_regulations)
-# p = plot_regulations(data, "Elf5", target)
-# filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target (global).html")
-# savefig(p, filepath)
+target = "Naaladl2"
+data = make_vis_data(target, tfs, prof, true_regulations, cluster=context)
+p = plot_regulations(data, "Elf5", target)
+filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target.html")
+savefig(p, filepath)
+# spliced
+p = plot_regulations(data, "Elf5", target, spliced=true)
+filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target (spliced).html")
+savefig(p, filepath)
+# global
+data = make_vis_data(target, tfs, prof, true_regulations)
+p = plot_regulations(data, "Elf5", target)
+filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target (global).html")
+savefig(p, filepath)
 
 
 target = "Cpe"
@@ -186,10 +185,6 @@ target = "Vdr"
 data = make_vis_data(target, tfs, prof, true_regulations, cluster=context)
 p = plot_regulations(data, "Vdr", "E2f1", target, model=cdgrn.models[Symbol(target)])
 filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target.html")
-savefig(p, filepath)
-# spliced
-p = plot_regulations(data, "Vdr", "E2f1", target, spliced=true)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target (spliced).html")
 savefig(p, filepath)
 # global
 data = make_vis_data(target, tfs, prof, true_regulations)

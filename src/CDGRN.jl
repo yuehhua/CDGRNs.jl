@@ -19,6 +19,7 @@ using SnowyOwl
 using StatsBase
 using Colors
 using Plots
+using SimpleWeightedGraphs
 using HypothesisTests
 using Gadfly
 

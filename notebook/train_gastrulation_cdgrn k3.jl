@@ -31,8 +31,10 @@ extract_context!(cell_clusters, tree, k)
 df = get_regulation_expr(prof, tfs, true_regulations, labels=:celltype)
 p = CDGRN.plot_3d_pca(Array(df[:, 3:end])', cell_clusters.k3)
 filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "gastrulation_erythroid", "CDGRN", "cell clusters k3.html")
-# p = CDGRN.plot_3d_pca(Array(df[:, 3:end])', df.cell, context)
-# filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "gastrulation_erythroid", "CDGRN", "cell clusters k3-2.html")
+
+context = cell_clusters.k3 .== 1
+p = CDGRN.plot_2d_pca(Array(df[:, 3:end])', df.cell, context)
+filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "gastrulation_erythroid", "CDGRN", "cell clusters k3-1.png")
 savefig(p, filepath)
 
 
@@ -45,16 +47,13 @@ cortable = train_cdgrns(tfs, prof, true_regulations,
 
 # Network entropy
 
-# edge count
-nrow(cortable[1])
-#node count
-length(unique(vcat(cortable[1].tf, cortable[1].target)))
-
-cortable[1].dist = cor2dist.(cortable[1].ρ)
-cortable[2].dist = cor2dist.(cortable[2].ρ)
-cortable[3].dist = cor2dist.(cortable[3].ρ)
-g = to_graph(cortable[1])
-network_entropy(g)
+for i in 1:3
+    E = nrow(cortable[i])
+    V = length(unique(vcat(cortable[i].tf, cortable[i].target)))
+    cortable[i].dist = cor2dist.(cortable[i].ρ)
+    entr = network_entropy(to_graph(cortable[i]))
+    println("Context $i:\nnode:\t$V\nedge:\t$E\nentropy:\t$entr")
+end
 
 
 

@@ -289,7 +289,7 @@ function to_graph(part_cor::DataFrame; src=:tf, dst=:target,
 end
 
 function network_entropy(g::AbstractGraph)
-    d = vec(sum(LightGraphs.weights(g), dims=1))
+    d = vec(sum(Graphs.weights(g), dims=1))
     replace!(d, 0=>eps(0.0))
     N = nv(g)
     return sum(log, d) / (N * log(maximum(d)))

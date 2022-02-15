@@ -47,6 +47,17 @@ function plot_3d_pca(data::AbstractMatrix, labels::AbstractVector, context::Abst
     return p
 end
 
+function plot_2d_pca(data::AbstractMatrix, labels::AbstractVector, context::AbstractVector; xaxis=1, yaxis=2)
+    pc = pca_transform(data)
+    α = map(x -> x ? 1. : 0.2, context)
+    colors = generate_column_colors(labels)
+    colors = map(x -> RGB(x...), colors)
+    p = Plots.scatter(pc[:, xaxis], pc[:, yaxis], group=labels, markercolor=colors, markeralpha=α,
+                      legend=:outerright, markersize=2, markerstrokewidth=0, dpi=300,
+                      xlabel="PC$xaxis", ylabel="PC$yaxis")
+    return p
+end
+
 function plot_regulations(data::DataFrame, x::String, y::String, z::String; model=nothing, spliced=false)
     plotly()
 
