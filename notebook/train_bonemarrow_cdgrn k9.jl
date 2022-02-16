@@ -23,7 +23,8 @@ cor_pairs, nonsingle_pairs = regulation_correlation(filename)
 true_regulations, true_reg_pairs = remove_spurious_pairs(cor_pairs, nonsingle_pairs)
 
 k = 9
-tree, cell_clusters = build_tree(prof, true_reg_pairs, save="clustermap_bonemarrow")
+filename = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "clustering", "clustermap_bonemarrow.png")
+tree, cell_clusters = build_tree(prof, true_reg_pairs, col_palette=:glasbey_hv_n256, save=filename)
 extract_context!(cell_clusters, tree, k)
 
 # Visualize PCA

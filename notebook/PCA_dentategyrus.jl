@@ -4,9 +4,12 @@ using CSV
 using JLD2
 using FileIO
 using MultivariateStats
+using Random
 using Plots
 using StatsPlots
 gr()
+
+Random.seed!(0)
 
 ## Load data
 
@@ -38,7 +41,8 @@ df.PC5 = pc[:, 5]
 
 plot_configs = (markersize=2, markerstrokewidth=0, dpi=300)
 
-@df df scatter(:PC1, :PC2; group=:cell, xlabel="PC1", ylabel="PC2", color_palette=:glasbey_hv_n256, legend=:outertopright, plot_configs...)
+@df df scatter(:PC1, :PC2; group=:cell, xlabel="PC1", ylabel="PC2", color_palette=:glasbey_hv_n256,
+               legend=:outertopright, plot_configs...)
 savefig(joinpath(fig_dir, "PCA", "pc12-cell type.svg"))
 savefig(joinpath(fig_dir, "PCA", "pc12-cell type.png"))
 
@@ -47,7 +51,8 @@ savefig(joinpath(fig_dir, "PCA", "pc12-cell type.png"))
 savefig(joinpath(fig_dir, "PCA", "pc12-latent time.svg"))
 savefig(joinpath(fig_dir, "PCA", "pc12-latent time.png"))
 
-@df df scatter(:PC1, :PC3; group=:cell, xlabel="PC1", ylabel="PC3", color_palette=:glasbey_hv_n256, legend=:outertopright, plot_configs...)
+@df df scatter(:PC1, :PC3; group=:cell, xlabel="PC1", ylabel="PC3", color_palette=:glasbey_hv_n256,
+               legend=:outertopright, plot_configs...)
 savefig(joinpath(fig_dir, "PCA", "pc13-cell type.svg"))
 savefig(joinpath(fig_dir, "PCA", "pc13-cell type.png"))
 

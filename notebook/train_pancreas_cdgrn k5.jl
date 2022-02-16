@@ -23,7 +23,8 @@ cor_pairs, nonsingle_pairs = regulation_correlation(filename)
 true_regulations, true_reg_pairs = remove_spurious_pairs(cor_pairs, nonsingle_pairs)
 
 k = 5
-tree, cell_clusters = build_tree(prof, true_reg_pairs, save="clustermap_pancreatic")
+filename = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "clustering", "clustermap_pancreatic.png")
+tree, cell_clusters = build_tree(prof, true_reg_pairs, col_palette=:default, save=filename)
 extract_context!(cell_clusters, tree, k)
 
 

@@ -23,7 +23,8 @@ cor_pairs, nonsingle_pairs = regulation_correlation(filename)
 true_regulations, true_reg_pairs = remove_spurious_pairs(cor_pairs, nonsingle_pairs)
 
 k = 3
-tree, cell_clusters = build_tree(prof, true_reg_pairs, celltype=:celltype, save="clustermap_gastrulation_erythroid")
+filename = joinpath(CDGRN.PROJECT_PATH, "pics", "gastrulation_erythroid", "clustering", "clustermap_gastrulation_erythroid.png")
+tree, cell_clusters = build_tree(prof, true_reg_pairs, celltype=:celltype, col_palette=:default, save=filename)
 extract_context!(cell_clusters, tree, k)
 
 # Visualize PCA

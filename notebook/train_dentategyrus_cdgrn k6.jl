@@ -23,7 +23,8 @@ cor_pairs, nonsingle_pairs = regulation_correlation(filename)
 true_regulations, true_reg_pairs = remove_spurious_pairs(cor_pairs, nonsingle_pairs)
 
 k = 6
-tree, cell_clusters = build_tree(prof, true_reg_pairs, save="clustermap_dentategyrus")
+filename = joinpath(CDGRN.PROJECT_PATH, "pics", "dentategyrus", "clustering", "clustermap_dentategyrus.png")
+tree, cell_clusters = build_tree(prof, true_reg_pairs, col_palette=:glasbey_hv_n256, save=filename)
 extract_context!(cell_clusters, tree, k)
 
 # Visualize PCA
@@ -41,13 +42,13 @@ savefig(p, filepath)
 # Train CDGRNs over contexts
 
 cortable = train_cdgrns(tfs, prof, true_regulations,
-    cell_clusters.k6, [1, 2, 3],
+    cell_clusters.k6, [1, 3, 5],
     joinpath(dir, "cdgrn_k6"))
 
 
 # Network entropy
 
-for i in 1:3
+for i in [1, 3, 5]
     E = nrow(cortable[i])
     V = length(unique(vcat(cortable[i].tf, cortable[i].target)))
     cortable[i].dist = cor2dist.(cortable[i].ρ)

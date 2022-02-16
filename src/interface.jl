@@ -24,7 +24,8 @@ function remove_spurious_pairs(cor_pairs, nonsingle_pairs)
     return true_regulations, true_reg_pairs
 end
 
-function build_tree(prof, true_reg_pairs; linkage=:ward, celltype=:clusters, time=:latent_time, save=nothing)
+function build_tree(prof, true_reg_pairs; linkage=:ward, celltype=:clusters,
+                    time=:latent_time, col_palette=:default, save=nothing)
     features = DataFrame()
     isnothing(celltype) || (features[!, :cell] = prof.obs[!, celltype])
     isnothing(time) || (features[!, :time] = prof.obs[!, time])
@@ -36,7 +37,7 @@ function build_tree(prof, true_reg_pairs; linkage=:ward, celltype=:clusters, tim
     data = Array(features[:, 3:end])
     D = pairwise(Hamming(), data, dims=1)
     tree = hclust(D, linkage=linkage, branchorder=:optimal)
-    isnothing(save) || clustermap(D, features.cell, filename=save)
+    isnothing(save) || clustermap(D, features.cell, save, col_palette=col_palette)
     return tree, features
 end
 
