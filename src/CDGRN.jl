@@ -6,20 +6,22 @@ using Missings
 using SparseArrays
 using Statistics
 
-using Clustering: kmeans, kmedoids, hclust, fuzzy_cmeans, assignments
+using Clustering
 using CSV
 using DataFrames
 using Distances
 using Distributions
 using FileIO: load
-using LightGraphs: SimpleDiGraph, add_edge!
+using Graphs
 using MultivariateStats
 using PyCall
 using SnowyOwl
 using StatsBase
 using Colors
 using Plots
-using LightGraphs
+using SimpleWeightedGraphs
+using HypothesisTests
+using Gadfly
 
 import Statistics: std, cor
 import GLM: fit, predict, coef, stderror, loglikelihood, dof, nobs
@@ -28,6 +30,17 @@ import StatsBase: dof, nobs, fit!
 const PROJECT_PATH = dirname(@__DIR__)
 
 export
+    # interface
+    load_profile,
+    regulation_correlation,
+    remove_spurious_pairs,
+    build_tree,
+    extract_context!,
+    context_correlation,
+    test_pmf,
+    test_cdf,
+    train_cdgrns,
+
     # data
     load_data,
     add_unspliced_data!,
@@ -35,8 +48,8 @@ export
     add_moments!,
     load_tfs,
     load_CHEA,
-    filter_tfs,
-    filter_tfs!,
+    select_high_likelihood!,
+    select_genes!,
 
     # preprocess
     make_graph,
@@ -54,7 +67,7 @@ export
     assign_clusters,
 
     # regression
-    LinearRegression,
+    # LinearRegression,
     AbstractGMR,
     NullGMR,
     GMR,
@@ -71,13 +84,13 @@ export
     correlation,
 
     # mixture
-    MixtureRegression,
-    hard_split,
-    probabilistic_split,
-    maximize_likelihood!,
-    update_expectation!,
-    fit!,
-    fit,
+    # MixtureRegression,
+    # hard_split,
+    # probabilistic_split,
+    # maximize_likelihood!,
+    # update_expectation!,
+    # fit!,
+    # fit,
 
     # metrics
     loglikelihood,
@@ -119,5 +132,7 @@ include("validation.jl")
 include("plots.jl")
 include("cdgrn.jl")
 include("graph.jl")
+
+include("interface.jl")
 
 end # module

@@ -5,7 +5,7 @@ using CSV
 using DataFrames
 using Gadfly
 using JLD2
-using MLDataUtils
+using MLUtils
 
 using CDGRN
 using SnowyOwl

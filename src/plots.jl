@@ -1,22 +1,26 @@
-function generate_column_colors(xs::AbstractVector; palette="rainbow")
-    sns = pyimport("seaborn")
-    keys = unique(xs)
-    lut = Dict(zip(keys, sns.mpl_palette(palette, length(keys))))
+function generate_plots_colors(xs::AbstractVector; col_palette=:default)
+    keys = sort(unique(xs))
+    lut = Dict(zip(keys, palette(col_palette)))
+    lut = Dict((k, (v.r, v.g, v.b)) for (k, v) in lut)
     return map(x -> lut[x], xs)
 end
 
-function clustermap(D::AbstractMatrix, labels; method::String="ward", filename="clustermap", ext=".png",
-                    figsize=(12, 9), cmap="YlGnBu", dpi=300)
+function clustermap(D::AbstractMatrix, labels, filename::String; method::String="ward",
+                    figsize=(12, 9), cmap="YlGnBu", col_palette=:default, col_colors=nothing, dpi=300)
     fastcluster = pyimport("fastcluster")
-    sns = pyimport("seaborn")
 
     link = fastcluster.linkage(D, method=method)
-    col_colors = generate_column_colors(labels)
+    isnothing(col_colors) && (col_colors = generate_plots_colors(labels, col_palette=col_palette))
     
+    clustermap(D, link, col_colors, filename, figsize=figsize, cmap=cmap, dpi=dpi)  
+end
+
+function clustermap(D::AbstractMatrix, link, col_colors, filename::String;
+                    figsize=(12, 9), cmap="YlGnBu", dpi=300)
+    sns = pyimport("seaborn")
     fig = sns.clustermap(D, row_linkage=link, col_linkage=link, col_colors=col_colors,
                          figsize=figsize, cmap=cmap)
-    filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "clustering", filename*ext)
-    fig.savefig(filepath, dpi=dpi)
+    fig.savefig(filename, dpi=dpi)
 end
 
 function dendrogram(D::AbstractMatrix, linkage=:ward)
@@ -39,11 +43,22 @@ end
 function plot_3d_pca(data::AbstractMatrix, labels::AbstractVector, context::AbstractVector)
     pc = pca_transform(data)
     α = map(x -> x ? 1. : 0.2, context)
-    colors = generate_column_colors(labels)
+    colors = generate_seaborn_colors(labels)
     colors = map(x -> RGB(x...), colors)
     p = Plots.scatter(pc[:, 1], pc[:, 2], pc[:, 3], group=labels,
                       markercolor=colors, markeralpha=α, markersize=1, markerstrokewidth=0,
                       xlabel="PC1", ylabel="PC2", zlabel="PC3")
+    return p
+end
+
+function plot_2d_pca(data::AbstractMatrix, labels::AbstractVector, context::AbstractVector; xaxis=1, yaxis=2)
+    pc = pca_transform(data)
+    α = map(x -> x ? 1. : 0.2, context)
+    colors = generate_seaborn_colors(labels)
+    colors = map(x -> RGB(x...), colors)
+    p = Plots.scatter(pc[:, xaxis], pc[:, yaxis], group=labels, markercolor=colors, markeralpha=α,
+                      legend=:outerright, markersize=2, markerstrokewidth=0, dpi=300,
+                      xlabel="PC$xaxis", ylabel="PC$yaxis")
     return p
 end
 
@@ -57,7 +72,8 @@ function plot_regulations(data::DataFrame, x::String, y::String, z::String; mode
     ylabel = "Spliced mRNA of $y"
     zlabel = spliced ? "Spliced mRNA of $z" : "Unspliced mRNA of $z"
     p = scatter(data[:,x_sym], data[:,y_sym], data[:,z_sym], group=data[:,:cell_type],
-                markersize=2, xlabel=xlabel, ylabel=ylabel, zlabel=zlabel)
+                markersize=2, markerstrokewidth=0, dpi=300,
+                xlabel=xlabel, ylabel=ylabel, zlabel=zlabel)
     if !isnothing(model)
         x = range(floor(minimum(data[:,x_sym])), stop=ceil(maximum(data[:,x_sym])), length=100)
         y = range(floor(minimum(data[:,y_sym])), stop=ceil(maximum(data[:,y_sym])), length=100)
@@ -75,7 +91,8 @@ function plot_regulations(data::DataFrame, x::String, y::String; model=nothing, 
     xlabel = "Spliced mRNA of $x"
     ylabel = spliced ? "Spliced mRNA of $y" : "Unspliced mRNA of $y"
     p = scatter(data[:,x_sym], data[:,y_sym], group=data[:,:cell_type],
-                markersize=3, xlabel=xlabel, ylabel=ylabel)
+                markersize=3, markerstrokewidth=0, dpi=300,
+                xlabel=xlabel, ylabel=ylabel)
     if !isnothing(model)
         x = range(floor(minimum(data[:,x_sym])), stop=ceil(maximum(data[:,x_sym])), length=100)
         plot!(p, x, y -> predict(model, [y]'), st=:surface,

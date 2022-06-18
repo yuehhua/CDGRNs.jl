@@ -8,7 +8,7 @@ tests = [
     "data",
     "regression",
     "metrics",
-    "mixture",
+    # "mixture",
 ]
 
 include("test_utils.jl")

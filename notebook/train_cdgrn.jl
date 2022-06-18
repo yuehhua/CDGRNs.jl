@@ -219,8 +219,8 @@ context_cor.regulation_type = context_cor.ρ .> 0
 context_cor.regulation_strength = abs.(context_cor.ρ)
 CSV.write("/media/yuehhua/Workbench/workspace/CDGRN/results/cdgrn_k3-3.csv", context_cor)
 
-# nodelabel = unique!(vcat(context_cor.tf, context_cor.target))
-# g = CDGRN.to_graph(context_cor, nodes=nodelabel)
+g = to_graph(context_cor)
+network_entropy(g)
 
 # using GraphRecipes
 # p = graphplot(g, curves=false, names=nodelabel, nodeshape=:ellipse)

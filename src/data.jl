@@ -33,37 +33,17 @@ function add_velocity!(prof::Profile, dir::String;
     prof
 end
 
-filter_genes(prof::Profile; kwargs...) = filter_genes!(copy(prof); kwargs...)
-
-function filter_genes!(prof::Profile; min_likelihood=0.1)
+function select_high_likelihood!(prof::Profile; min_likelihood=0.1)
     select_likelihood = x -> !ismissing(x) && x .≥ min_likelihood
     return filter!(:fit_likelihood => select_likelihood, prof)
 end
 
-load_tfs(filepath::String) = load(filepath, "tf_set")
-
-filter_tfs(prof, tf_set) = filter_tfs!(copy(prof), tf_set)
-
-function filter_tfs!(prof::Profile, tf_set)
-    select_index = x -> uppercase(x) in tf_set
-    selected_rows = select_index.(prof.var.index)
-    filter!(:index => select_index, prof.var)
-    prof.data = prof.data[selected_rows, :]
-    prof.layers[:Mu] = prof.layers[:Mu][selected_rows, :]
-    prof.layers[:velocity_u] = prof.layers[:velocity_u][selected_rows, :]
-    prof.layers[:Ms] = prof.layers[:Ms][selected_rows, :]
-    prof.layers[:velocity] = prof.layers[:velocity][selected_rows, :]
-
-    select_likelihood = x -> !ismissing(x)
-    selected_rows = select_likelihood.(prof.var.fit_likelihood)
-    filter!(:fit_likelihood => x -> select_likelihood(x), prof.var)
-    prof.data = prof.data[selected_rows, :]
-    prof.layers[:Mu] = prof.layers[:Mu][selected_rows, :]
-    prof.layers[:velocity_u] = prof.layers[:velocity_u][selected_rows, :]
-    prof.layers[:Ms] = prof.layers[:Ms][selected_rows, :]
-    prof.layers[:velocity] = prof.layers[:velocity][selected_rows, :]
-    return prof
+function select_genes!(prof::Profile, gene_set)
+    isin_geneset = x -> uppercase(x) in gene_set
+    return filter!(:index => isin_geneset, prof)
 end
+
+load_tfs(filepath::String) = load(filepath, "tf_set")
 
 function load_CHEA(dirpath::String)
     data_path = joinpath(dirpath, "data")

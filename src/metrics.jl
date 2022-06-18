@@ -1,33 +1,33 @@
-SSE(model::NullRegression, X::AbstractVecOrMat, y::AbstractVector) = residual(model, X, y)'*residual(model, X, y)
-SSE(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector) = residual(model, X, y)'*residual(model, X, y)
+# SSE(model::NullRegression, X::AbstractVecOrMat, y::AbstractVector) = residual(model, X, y)'*residual(model, X, y)
+# SSE(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector) = residual(model, X, y)'*residual(model, X, y)
 
 
-MSE(::NullRegression, X::AbstractVecOrMat, y::AbstractVector) = var(y)
-function MSE(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector; corrected=false)
-    sse = SSE(model, X, y)
-    return corrected ? sse / dof(model, kind=:residual) : sse / nobs(model)
-end
+# MSE(::NullRegression, X::AbstractVecOrMat, y::AbstractVector) = var(y)
+# function MSE(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector; corrected=false)
+#     sse = SSE(model, X, y)
+#     return corrected ? sse / dof(model, kind=:residual) : sse / nobs(model)
+# end
 
-function MSE(model::MixtureRegression{K}, X::AbstractVecOrMat, y::AbstractVector{T}) where {K,T}
-    clst = predict_cluster(model, X, y)
-    total_sse = zero(T)
-    for k = 1:K
-        m = model.models[k]
-        total_sse += SSE(m, _view(X, clst .== k), view(y, clst .== k))
-    end
-    return total_sse / length(y)
-end
+# function MSE(model::MixtureRegression{K}, X::AbstractVecOrMat, y::AbstractVector{T}) where {K,T}
+#     clst = predict_cluster(model, X, y)
+#     total_sse = zero(T)
+#     for k = 1:K
+#         m = model.models[k]
+#         total_sse += SSE(m, _view(X, clst .== k), view(y, clst .== k))
+#     end
+#     return total_sse / length(y)
+# end
 
 
-function likelihood(model::NullRegression, X::AbstractVecOrMat, y::AbstractVector)
-    normal = Normal(0, model.σ)
-    return pdf.(normal, residual(model, X, y))
-end
+# function likelihood(model::NullRegression, X::AbstractVecOrMat, y::AbstractVector)
+#     normal = Normal(0, model.σ)
+#     return pdf.(normal, residual(model, X, y))
+# end
 
-function likelihood(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector)
-    normal = Normal(0, std(model))
-    return pdf.(normal, residual(model, X, y))
-end
+# function likelihood(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector)
+#     normal = Normal(0, std(model))
+#     return pdf.(normal, residual(model, X, y))
+# end
 
 likelihood(model::AbstractGMR, x::AbstractVector) = pdf.(model.dist, x)
 likelihood(model::AbstractGMR, X::AbstractMatrix) = [pdf(model.dist, vec(X[i,:])) for i = 1:size(X, 1)]
@@ -51,34 +51,34 @@ function membership(model::GMR{K}, k_component, X::AbstractMatrix) where {K}
 end
 
 
-"""
-    loglikelihood(model[, X, y])
+# """
+#     loglikelihood(model[, X, y])
 
-Log likelihood of a model.
+# Log likelihood of a model.
 
-Returns log likelihood values. If X, y are not given, log likelihood is evaluated by training data.
-"""
-loglikelihood(::NullRegression; average::Bool=false) = -Inf
-function loglikelihood(model::NullRegression, X::AbstractVecOrMat, y::AbstractVector; average::Bool=false)
-    n = model.n
-    ll = 0.5 * n * log(2π) + n * log(model.σ)
-    ll -= 0.5 * sum(zscore(y).^2) / n
-    return ll
-end
+# Returns log likelihood values. If X, y are not given, log likelihood is evaluated by training data.
+# """
+# loglikelihood(::NullRegression; average::Bool=false) = -Inf
+# function loglikelihood(model::NullRegression, X::AbstractVecOrMat, y::AbstractVector; average::Bool=false)
+#     n = model.n
+#     ll = 0.5 * n * log(2π) + n * log(model.σ)
+#     ll -= 0.5 * sum(zscore(y).^2) / n
+#     return ll
+# end
 
-function loglikelihood(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector; average::Bool=false)
-    normal = Normal(0, std(model))
-    lls = logpdf.(normal, residual(model, X, y))
-    return average ? mean(lls) : sum(lls)
-end
+# function loglikelihood(model::LinearRegression, X::AbstractVecOrMat, y::AbstractVector; average::Bool=false)
+#     normal = Normal(0, std(model))
+#     lls = logpdf.(normal, residual(model, X, y))
+#     return average ? mean(lls) : sum(lls)
+# end
 
-loglikelihood(model::MixtureRegression{K}) where {K} = _loglikelihood(model.likelihoods, model.clusters, K)
+# loglikelihood(model::MixtureRegression{K}) where {K} = _loglikelihood(model.likelihoods, model.clusters, K)
 
-function loglikelihood(model::MixtureRegression{K}, X::AbstractVecOrMat, y::AbstractVector) where {K}
-    likelihoods = _likelihood(model, X, y)
-    clusters = map(hard_split, likelihoods...)
-    return _loglikelihood(likelihoods, clusters, K)
-end
+# function loglikelihood(model::MixtureRegression{K}, X::AbstractVecOrMat, y::AbstractVector) where {K}
+#     likelihoods = _likelihood(model, X, y)
+#     clusters = map(hard_split, likelihoods...)
+#     return _loglikelihood(likelihoods, clusters, K)
+# end
 
 loglikelihood(model::AbstractGMR, x::AbstractVector) = logpdf.(model.dist, x)
 loglikelihood(model::AbstractGMR, X::AbstractMatrix) = [logpdf(model.dist, vec(X[i,:])) for i = 1:size(X, 1)]

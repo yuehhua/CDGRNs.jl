@@ -1,104 +1,28 @@
 using Logging
 
 using CDGRN
-using DataFrames
-using CSV
-using FileIO
-using JLD2
 using SnowyOwl
+using DataFrames
+using JLD2
+using FileIO
 using Gadfly
 using Statistics
-using GaussianMixtures
-using Distributions
-using Clustering
-using Distances
 Gadfly.set_default_plot_size(8inch, 6inch)
 
 ## Load data
 
 dir = joinpath(CDGRN.PROJECT_PATH, "results", "pancreas")
-prof = load_data(dir)
-add_unspliced_data!(prof, dir)
-add_velocity!(prof, dir)
-add_moments!(prof, dir)
+prof = load_profile(dir)
+tf_set = CDGRN.load_tfs(joinpath(dir, "tf_set.jld2"))
+tfs = select_genes!(copy(prof), tf_set)
 
-tfs = copy(prof)
-
-CDGRN.filter_genes!(prof)
+select_high_likelihood!(prof)
 vars = prof.var
 u = prof.layers[:Mu]
 
-tf_set = CDGRN.load_tfs(joinpath(dir, "tf_set.jld2"))
-CDGRN.filter_tfs!(tfs, tf_set)
+select_high_likelihood!(tfs, min_likelihood=-Inf)
 tf_vars = tfs.var
 tf_s = tfs.layers[:Ms]
-
-## Select target gene
-
-# gene_name = "Rps3"
-# i = collect(1:nrow(vars))[vars.index .== gene_name][1]
-
-## Analysis of $s_{tf}$ and $u_{targ}$
-
-# j = 8
-# tf_name = tf_vars[j, :index]
-# gene_name = vars[i, :index]
-# df = DataFrame(X=tf_s[j, :], Y=u[i, :], Cell=prof.obs.clusters, time=prof.obs.latent_time)
-# df.logX = log1p.(df.X)
-# df.logY = log1p.(df.Y)
-# train = hcat(df.logX, df.logY)
-
-# l1 = layer(df, x=:X, y=:Y, color=:Cell, Geom.point)
-# p1 = plot(l1,
-# 	 Guide.title("Relationship of s_tf and u_targ"),
-# 	 Guide.xlabel("Spliced RNA of TF gene, $(tf_name)"),
-# 	 Guide.ylabel("Unspliced RNA of target gene, $(gene_name)"),
-# )
-
-# l2 = layer(df, x=:logX, y=:logY, color=:Cell, Geom.point)
-# p2 = plot(l2,
-# 	 Guide.title("Relationship of s_tf and u_targ"),
-# 	 Guide.xlabel("log2 spliced RNA of TF gene, $(tf_name)"),
-# 	 Guide.ylabel("log2 unspliced RNA of target gene, $(gene_name)"),
-# )
-
-# k = 4
-# gmm = GaussianMixtures.GMM(k, train, kind=:full)
-# posterior, ll = GaussianMixtures.gmmposterior(gmm, train)
-# df.cluster = string.(assign_clusters(posterior))
-# model = MixtureModel(gmm)
-# mix_logpdf(x,y) = logpdf(model, [x,y])
-
-# D = pairwise(Euclidean(), train, dims=1)
-# ms = mean(silhouettes(clusters, D))
-
-# xmax = ceil(maximum(df.logX))
-# xmin = floor(minimum(df.logX))
-# ymax = ceil(maximum(df.logY))
-# ymin = floor(minimum(df.logY))
-
-# l3 = layer(df, x=:logX, y=:logY, Geom.point)
-# l4 = layer(z=mix_logpdf, xmin=[xmin], xmax=[xmax], ymin=[ymin], ymax=[ymax], Geom.contour)
-# coord = Coord.cartesian(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)
-# p3 = plot(l3, l4, coord,
-#     Guide.xlabel("log spliced RNA of TF gene, $(tf_name)"),
-#     Guide.ylabel("log unspliced RNA of target gene, $(gene_name)"),
-# )
-# p3 |> SVG(joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "$(tf_name)-$(gene_name) log likelihood plot.svg"), 10inch, 6inch)
-
-
-# cluster plot
-# l5 = layer(df, x=:logX, y=:logY, color=:cluster, Geom.point,
-#     Geom.ellipse(levels=[0.95, 0.99])
-# )
-# p4 = plot(l5, coord,
-#     Guide.xlabel("log spliced RNA of TF gene, $(tf_name)"),
-#     Guide.ylabel("log unspliced RNA of target gene, $(gene_name)"),
-# )
-# p4 |> SVG(joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "$(tf_name)-$(gene_name) log cluster plot.svg"), 10inch, 6inch)
-
-
-# ----------------------------------------------------
 
 function log_likelihood_plot(df, tf_name, gene_name, mix_logpdf;
                              xmax=ceil(maximum(df.logX)), xmin=floor(minimum(df.logX)),
