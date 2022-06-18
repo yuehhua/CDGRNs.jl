@@ -98,30 +98,47 @@ function test_cdf(ρ1, ρ2, condition1, condition2; step=0.1, plot_dir=nothing, 
     return test_result
 end
 
-function train_cdgrns(tfs, prof, true_regulations, contexts, selected_contexts, dir::String; reg_strength=0.3)
-    k = maximum(contexts)
-    cortable = Dict()
-    for i in selected_contexts
-        cntx = contexts .== i
+function save_cdgrn(filename, cdgrn, tfs, prof, cntx)
+    context_cor = CDGRN.cor(cdgrn, tfs, prof, cntx)
+    context_cor = context_cor[.!isnan.(context_cor.ρ), :]
+    context_cor.reg_type = context_cor.ρ .> 0
+    context_cor.reg_stng = abs.(context_cor.ρ)
+    CSV.write(filename, context_cor)
+    return context_cor
+end
+
+function save_effective_gene_set(filename, context_cor, reg_strength)
+    correlated = context_cor[context_cor.reg_stng .≥ reg_strength, :]
+    gene_set = DataFrame(gene=unique!(vcat(correlated.tf, correlated.target)))
+    CSV.write(filename, gene_set)
+end
+
+function train_cdgrns(tfs, prof, true_regulations, clusters, selected::AbstractVector{T},
+                      reg_strength::Real, dir::String, prefix::String) where {T}
+    cortable = Dict{T,DataFrame}()
+    for i in selected
+        cntx = clusters .== i
         cdgrn = train(ContextDependentGRN, tfs, prof, true_regulations, cntx)
         evaluate!(cdgrn)
     
-        context_cor = CDGRN.cor(cdgrn, tfs, prof, cntx)
-        context_cor = context_cor[.!isnan.(context_cor.ρ), :]
-        context_cor.reg_type = context_cor.ρ .> 0
-        context_cor.reg_stng = abs.(context_cor.ρ)
-        CSV.write(joinpath(dir, "cdgrn_k$(k)-$(i).csv"), context_cor)
-    
-        ## Effective gene set
-        correlated = context_cor[context_cor.reg_stng .≥ reg_strength, :]
-        gene_set = DataFrame(gene=unique!(vcat(correlated.tf, correlated.target)))
-        CSV.write(joinpath(dir, "cdgrn_k$(k)-$(i)_gene_set.csv"), gene_set)
+        filename = joinpath(dir, "$(prefix)-$(i).csv")
+        context_cor = save_cdgrn(filename, cdgrn, tfs, prof, cntx)
+        
+        filename = joinpath(dir, "$(prefix)-$(i)_gene_set.csv")
+        save_effective_gene_set(filename, context_cor, reg_strength)
     
         ## add gene expression
         context_cor.tf_s = [mean(vec(get_gene_expr(tfs, String(g), :Ms))[cntx]) for g in context_cor.tf]
         context_cor.target_u = [mean(vec(get_gene_expr(prof, String(g), :Mu))[cntx]) for g in context_cor.target]
         cortable[i] = context_cor
     end
+    return cortable
+end
+
+function train_cdgrns(tfs, prof, true_regulations, contexts, selected_contexts::AbstractVector{Int},
+                      dir::String; reg_strength=0.3, prefix="cdgrn_k")
+    cortable = train_cdgrns(tfs, prof, true_regulations, contexts, selected_contexts,
+                            reg_strength, dir, prefix)
 
     i, j = selected_contexts[1], selected_contexts[2]
     joined = outerjoin(cortable[i], cortable[j], on=[:tf, :target], renamecols="_cntx$i"=>"_cntx$j")
@@ -135,7 +152,13 @@ function train_cdgrns(tfs, prof, true_regulations, contexts, selected_contexts, 
         replace!(joined[!, Symbol("tf_s_cntx$i")], missing=>0)
         replace!(joined[!, Symbol("target_u_cntx$i")], missing=>0)
     end
-    CSV.write(joinpath(dir, "cdgrn_k$(k)_all.csv"), joined)
+    CSV.write(joinpath(dir, "$(prefix)_all.csv"), joined)
     
     return cortable
+end
+
+function train_cdgrns(tfs, prof, true_regulations, cells, selected_cells::AbstractVector{String},
+                      dir::String; reg_strength=0.3, prefix="cdgrn_k")
+    return train_cdgrns(tfs, prof, true_regulations, cells, selected_cells,
+                        reg_strength, dir, prefix)
 end

@@ -1,5 +1,3 @@
-using MLDataUtils
-
 function validate_score(reg::Type{MixtureRegression{K}}, X::AbstractVecOrMat, y::AbstractVector{T};
                         cv=0, λ=2e-2, criterion=aic, return_model=false)  where {K,T}
     if cv == 0

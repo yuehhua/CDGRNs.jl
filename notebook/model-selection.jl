@@ -6,7 +6,6 @@ using CSV
 using DataFrames
 using Gadfly
 using JLD2
-using MLDataUtils
 
 using CDGRN
 using SnowyOwl

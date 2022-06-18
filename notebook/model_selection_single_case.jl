@@ -6,7 +6,6 @@ using CSV
 using JLD2
 using SnowyOwl
 using Gadfly
-using MLDataUtils
 using Clustering
 using Distances
 using Statistics

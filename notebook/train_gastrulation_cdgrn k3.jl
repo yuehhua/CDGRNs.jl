@@ -1,6 +1,9 @@
 using CDGRN
 using SnowyOwl
-using Gadfly
+using DataFrames
+using Plots
+using StatsPlots
+gr()
 
 ## Load data
 
@@ -48,13 +51,29 @@ cortable = train_cdgrns(tfs, prof, true_regulations,
 
 # Network entropy
 
+cdgrn_stats = DataFrame(cntx=String[], V=Int[], E=Int[], entropy=Float64[])
 for i in 1:3
     E = nrow(cortable[i])
     V = length(unique(vcat(cortable[i].tf, cortable[i].target)))
     cortable[i].dist = cor2dist.(cortable[i].ρ)
     entr = network_entropy(to_graph(cortable[i]))
-    println("Context $i:\nnode:\t$V\nedge:\t$E\nentropy:\t$entr")
+    push!(cdgrn_stats, ("context $i", V, E, entr))
 end
+cdgrn_stats[!, :order] = [1, 2, 3]
+
+p = @df cdgrn_stats plot(:order, [:V, :E],
+    label=["Number of node" "Number of edge"],
+    xlabel="Context", ylabel="Network size"
+)
+xticks!([1:3;], cdgrn_stats[!,:cntx])
+filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "gastrulation_erythroid", "CDGRN", "network_size k3.png")
+savefig(p, filepath)
+
+p = @df cdgrn_stats plot(:order, :entropy,
+    xlabel="Context", ylabel="Network entropy", legend=false)
+xticks!([1:3;], cdgrn_stats[!,:cntx])
+filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "gastrulation_erythroid", "CDGRN", "network_entropy k3.png")
+savefig(p, filepath)
 
 
 

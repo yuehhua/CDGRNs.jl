@@ -35,6 +35,7 @@ df.PC2 = pc[:, 2]
 df.PC3 = pc[:, 3]
 df.PC4 = pc[:, 4]
 df.PC5 = pc[:, 5]
+df.reverse_time = 1 .- df.time
 
 plot_configs = (markersize=2, markerstrokewidth=0, dpi=300)
 
@@ -46,6 +47,11 @@ savefig(joinpath(fig_dir, "PCA", "pc12-cell type.png"))
                legend=false, cb=:outerright, plot_configs...)
 savefig(joinpath(fig_dir, "PCA", "pc12-latent time.svg"))
 savefig(joinpath(fig_dir, "PCA", "pc12-latent time.png"))
+
+@df df scatter(:PC1, :PC2; zcolor=:reverse_time, c=:coolwarm, xlabel="PC1", ylabel="PC2",
+               legend=false, cb=:outerright, plot_configs...)
+savefig(joinpath(fig_dir, "PCA", "pc12-reverse latent time.svg"))
+savefig(joinpath(fig_dir, "PCA", "pc12-reverse latent time.png"))
 
 @df df scatter(:PC1, :PC3; group=:cell, xlabel="PC1", ylabel="PC3", legend=:outertopright, plot_configs...)
 savefig(joinpath(fig_dir, "PCA", "pc13-cell type.svg"))

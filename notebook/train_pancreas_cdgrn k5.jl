@@ -1,6 +1,9 @@
 using CDGRN
 using SnowyOwl
-using Gadfly
+using DataFrames
+using Plots
+using StatsPlots
+gr()
 
 ## Load data
 
@@ -72,13 +75,35 @@ cortable = train_cdgrns(tfs, prof, true_regulations,
 
 # Network entropy
 
-for i in 1:5
+cdgrn_stats = DataFrame(cntx=String[], V=Int[], E=Int[], entropy=Float64[])
+for i in [3, 2, 4, 5, 1]
     E = nrow(cortable[i])
     V = length(unique(vcat(cortable[i].tf, cortable[i].target)))
     cortable[i].dist = cor2dist.(cortable[i].ρ)
     entr = network_entropy(to_graph(cortable[i]))
-    println("Context $i:\nnode:\t$V\nedge:\t$E\nentropy:\t$entr")
+    push!(cdgrn_stats, ("context $i", V, E, entr))
 end
+cdgrn_stats[!, :order] = [1, 2, 3, 4, 5]
+
+p = @df cdgrn_stats plot(:order, [:V, :E],
+    label=["Number of node" "Number of edge"],
+    xlabel="Context", ylabel="Network size"
+)
+xticks!([1:5;], cdgrn_stats[!,:cntx])
+filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "network_size k5.png")
+savefig(p, filepath)
+
+p = @df cdgrn_stats plot(:order, :entropy,
+    xlabel="Context", ylabel="Network entropy", legend=false)
+xticks!([1:5;], cdgrn_stats[!,:cntx])
+filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "network_entropy k5.png")
+savefig(p, filepath)
+
+
+# Train CDGRNs over cell types
+cortable = train_cdgrns(tfs, prof, true_regulations,
+    cell_clusters.cell, ["Alpha", "Beta", "Epsilon", "Pre-endocrine"],
+    joinpath(dir, "cdgrn_k5"))
 
 
 
