@@ -2,7 +2,7 @@ function corr_table(pairs)
     # unit: component
     cor_pairs = map(x -> (tf=x[:tf_name], target=x[:gene_name], best_k=x[:best_k], corr=correlation(x[:model])), pairs)
     df = DataFrames.flatten(DataFrame(cor_pairs), :corr)
-    df.adjusted_corr = CDGRN.fisher_transform(df.corr)
+    df.adjusted_corr = CDGRNs.fisher_transform(df.corr)
     return df
 end
 

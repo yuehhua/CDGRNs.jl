@@ -1,4 +1,4 @@
-using CDGRN
+using CDGRNs
 using DataFrames
 using CSV
 using SnowyOwl

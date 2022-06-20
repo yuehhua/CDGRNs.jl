@@ -1,16 +1,16 @@
-using CDGRN
+using CDGRNs
 using Documenter
 
-DocMeta.setdocmeta!(CDGRN, :DocTestSetup, :(using CDGRN); recursive=true)
+DocMeta.setdocmeta!(CDGRNs, :DocTestSetup, :(using CDGRNs); recursive=true)
 
 makedocs(;
-    modules=[CDGRN],
+    modules=[CDGRNs],
     authors="Yueh-Hua Tu",
-    repo="https://github.com/yuehhua/CDGRN.jl/blob/{commit}{path}#{line}",
-    sitename="CDGRN.jl",
+    repo="https://github.com/yuehhua/CDGRNs.jl/blob/{commit}{path}#{line}",
+    sitename="CDGRNs.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://yuehhua.github.io/CDGRN.jl",
+        canonical="https://yuehhua.github.io/CDGRNs.jl",
         edit_link="main",
         assets=String[],
     ),
@@ -20,6 +20,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/yuehhua/CDGRN.jl",
+    repo="github.com/yuehhua/CDGRNs.jl",
     devbranch="main",
 )

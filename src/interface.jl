@@ -99,7 +99,7 @@ function test_cdf(ρ1, ρ2, condition1, condition2; step=0.1, plot_dir=nothing, 
 end
 
 function save_cdgrn(filename, cdgrn, tfs, prof, cntx)
-    context_cor = CDGRN.cor(cdgrn, tfs, prof, cntx)
+    context_cor = CDGRNs.cor(cdgrn, tfs, prof, cntx)
     context_cor = context_cor[.!isnan.(context_cor.ρ), :]
     context_cor.reg_type = context_cor.ρ .> 0
     context_cor.reg_stng = abs.(context_cor.ρ)

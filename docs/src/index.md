@@ -1,14 +1,14 @@
 ```@meta
-CurrentModule = CDGRN
+CurrentModule = CDGRNs
 ```
 
-# CDGRN
+# CDGRNs
 
-Documentation for [CDGRN](https://github.com/yuehhua/CDGRN.jl).
+Documentation for [CDGRNs](https://github.com/yuehhua/CDGRNs.jl).
 
 ```@index
 ```
 
 ```@autodocs
-Modules = [CDGRN]
+Modules = [CDGRNs]
 ```
