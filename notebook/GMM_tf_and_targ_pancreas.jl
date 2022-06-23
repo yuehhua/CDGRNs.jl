@@ -1,6 +1,6 @@
 using Logging
 
-using CDGRN
+using CDGRNs
 using SnowyOwl
 using DataFrames
 using JLD2
@@ -11,9 +11,9 @@ Gadfly.set_default_plot_size(8inch, 6inch)
 
 ## Load data
 
-dir = joinpath(CDGRN.PROJECT_PATH, "results", "pancreas")
+dir = joinpath(CDGRNs.PROJECT_PATH, "results", "pancreas")
 prof = load_profile(dir)
-tf_set = CDGRN.load_tfs(joinpath(dir, "tf_set.jld2"))
+tf_set = CDGRNs.load_tfs(joinpath(dir, "tf_set.jld2"))
 tfs = select_genes!(copy(prof), tf_set)
 
 select_high_likelihood!(prof)
@@ -32,7 +32,7 @@ function log_likelihood_plot(df, tf_name, gene_name, mix_logpdf;
     coord = Coord.cartesian(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)
     xlabel = "log spliced RNA of TF gene, $(tf_name)"
     ylabel = "log unspliced RNA of target gene, $(gene_name)"
-    filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "$(tf_name)-$(gene_name) log likelihood plot.svg")
+    filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "$(tf_name)-$(gene_name) log likelihood plot.svg")
     plot(l1, l2, coord, Guide.xlabel(xlabel), Guide.ylabel(ylabel)) |> SVG(filepath, 10inch, 6inch)
 end
 
@@ -42,7 +42,7 @@ function cluster_plot(df, tf_name, gene_name; xmax=ceil(maximum(df.logX)), xmin=
     coord = Coord.cartesian(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)
     xlabel = "log spliced RNA of TF gene, $(tf_name)"
     ylabel = "log unspliced RNA of target gene, $(gene_name)"
-    filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "$(tf_name)-$(gene_name) log cluster plot.svg")
+    filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "$(tf_name)-$(gene_name) log cluster plot.svg")
     plot(l, coord, Guide.xlabel(xlabel), Guide.ylabel(ylabel)) |> SVG(filepath, 10inch, 6inch)
 end
 

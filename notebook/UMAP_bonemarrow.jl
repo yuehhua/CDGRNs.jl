@@ -1,4 +1,4 @@
-using CDGRN
+using CDGRNs
 using DataFrames
 using CSV
 using JLD2
@@ -10,10 +10,10 @@ gr()
 
 ## Load data
 
-dir = joinpath(CDGRN.PROJECT_PATH, "results", "bonemarrow")
-fig_dir = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow")
+dir = joinpath(CDGRNs.PROJECT_PATH, "results", "bonemarrow")
+fig_dir = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow")
 prof = load_profile(dir)
-tf_set = CDGRN.load_tfs(joinpath(dir, "tf_set.jld2"))
+tf_set = CDGRNs.load_tfs(joinpath(dir, "tf_set.jld2"))
 tfs = select_genes!(copy(prof), tf_set)
 
 select_high_likelihood!(prof)
