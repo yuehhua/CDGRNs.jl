@@ -1,5 +1,6 @@
 module CDGRNs
 
+using GaussianMixtures
 using GaussianMixtures: GaussianMixture, size
 using LinearAlgebra
 using Missings
@@ -18,10 +19,10 @@ using PyCall
 using SnowyOwl
 using StatsBase
 using Colors
-using Plots
+using Plots, StatsPlots
 using SimpleWeightedGraphs
 using HypothesisTests
-using Gadfly
+using GLM
 
 import Statistics: std, cor
 import GLM: fit, predict, coef, stderror, loglikelihood, dof, nobs

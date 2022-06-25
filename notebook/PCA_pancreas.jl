@@ -1,4 +1,4 @@
-using CDGRN
+using CDGRNs
 using DataFrames
 using CSV
 using JLD2
@@ -10,10 +10,10 @@ default(size = (800, 600))
 
 ## Load data
 
-dir = joinpath(CDGRN.PROJECT_PATH, "results", "pancreas")
-fig_dir = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model")
+dir = joinpath(CDGRNs.PROJECT_PATH, "results", "pancreas")
+fig_dir = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model")
 prof = load_profile(dir)
-tf_set = CDGRN.load_tfs(joinpath(dir, "tf_set.jld2"))
+tf_set = CDGRNs.load_tfs(joinpath(dir, "tf_set.jld2"))
 tfs = select_genes!(copy(prof), tf_set)
 
 select_high_likelihood!(prof)
@@ -29,7 +29,7 @@ cor_pairs, nonsingle_pairs = regulation_correlation(filename)
 true_regulations, true_reg_pairs = remove_spurious_pairs(cor_pairs, nonsingle_pairs)
 
 df = get_regulation_expr(prof, tfs, true_regulations)
-pc = CDGRN.pca_transform(Array(df[:, 3:end])', dims=5)
+pc = CDGRNs.pca_transform(Array(df[:, 3:end])', dims=5)
 df.PC1 = pc[:, 1]
 df.PC2 = pc[:, 2]
 df.PC3 = pc[:, 3]

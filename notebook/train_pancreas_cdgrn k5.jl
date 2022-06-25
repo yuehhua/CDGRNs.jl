@@ -68,9 +68,9 @@ savefig(p, filepath)
 
 # Train CDGRNs over contexts
 
-cortable = train_cdgrns(tfs, prof, true_regulations,
+cortable, cdgrns = train_cdgrns(tfs, prof, true_regulations,
     cell_clusters.k5, [1, 2, 3, 4, 5],
-    joinpath(dir, "cdgrn_k5"))
+    joinpath(dir, "cdgrn_k5"), return_model=true)
 
 
 # Network entropy
@@ -109,6 +109,7 @@ cortable = train_cdgrns(tfs, prof, true_regulations,
 
 # k5: 3
 context = cell_clusters.k5 .== 3
+cdgrn = cdgrns[3]
 
 target = "Ccne2"
 data = make_vis_data(target, tfs, prof, true_regulations, cluster=context)
@@ -158,6 +159,7 @@ savefig(p, filepath)
 
 # k5: 2
 context = cell_clusters.k5 .== 2
+cdgrn = cdgrns[2]
 
 target = "E2f1"
 data = make_vis_data(target, tfs, prof, true_regulations, cluster=context)
@@ -168,6 +170,7 @@ savefig(p, filepath)
 
 # k5: 4
 context = cell_clusters.k5 .== 4
+cdgrn = cdgrns[4]
 
 target = "Pax6"
 data = make_vis_data(target, tfs, prof, true_regulations, cluster=context)
