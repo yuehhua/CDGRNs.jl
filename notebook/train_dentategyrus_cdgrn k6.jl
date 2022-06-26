@@ -66,13 +66,13 @@ p = @df cdgrn_stats plot(:order, [:V, :E],
     xlabel="Context", ylabel="Network size"
 )
 xticks!([1:4;], cdgrn_stats[!,:cntx])
-filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "dentategyrus", "CDGRN", "network_size k9.png")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "dentategyrus", "CDGRN", "network_size k6.png")
 savefig(p, filepath)
 
 p = @df cdgrn_stats plot(:order, :entropy,
     xlabel="Context", ylabel="Network entropy", legend=false)
 xticks!([1:4;], cdgrn_stats[!,:cntx])
-filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "dentategyrus", "CDGRN", "network_entropy k9.png")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "dentategyrus", "CDGRN", "network_entropy k6.png")
 savefig(p, filepath)
 
 
