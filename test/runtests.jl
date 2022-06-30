@@ -1,11 +1,12 @@
 using CDGRNs
-using DataFrames
-using CSV
+using CSV, DataFrames
+using GLM
+using Statistics
 using SnowyOwl
 using Test
 
 tests = [
-    "data",
+    # "data",
     "regression",
     "metrics",
     # "mixture",

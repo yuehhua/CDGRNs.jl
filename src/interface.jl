@@ -54,29 +54,29 @@ function context_correlation(tfs, prof, true_regulations, context, k)
     return context_cor, selected_context, context_pairs
 end
 
-function test_pmf(ρ1, ρ2, condition1, condition2; α=0.7, bincount=30, plot_dir=nothing, title="")
+function test_pmf(ρ1, ρ2, condition1, condition2; α=0.7, bincount=30,
+        plot_dir=nothing, title="", save_png=true, save_svg=true, figsize=(800, 600))
     test_result = MannWhitneyUTest(abs.(ρ1), abs.(ρ2))
 
     if !isnothing(plot_dir)
         ρ = vcat(ρ1, ρ2)
         condition = vcat(repeat([condition1], length(ρ1)), repeat([condition2], length(ρ2)))
         plot_df = DataFrame(ρ=ρ, condition=condition)
-        plot_df[!,:alpha] .= α
+        bins = range(minimum(plot_df[!, :ρ]), stop=maximum(plot_df[!, :ρ]), length=bincount)
 
-        Gadfly.with_theme(style(grid_line_style=:solid)) do
-            p = Gadfly.plot(
-                plot_df, x=:ρ, color=:condition, alpha=:alpha,
-                Geom.histogram(position=:identity, bincount=bincount),
-                Guide.xlabel("TF-target pair correlation")
-            )
-            draw(SVG(joinpath(plot_dir, "histogram_$(title).svg"), 6inch, 4inch), p)
-            draw(PNG(joinpath(plot_dir, "histogram_$(title).png"), 6inch, 4inch), p)
-        end
+        p = @df plot_df histogram(:ρ, group=:condition, bins=bins,
+            fillalpha=α, bar_edges=false,
+            xlabel="TF-target pair correlation", ylabel="Count",
+            thickness_scaling=2, widen=false, size=figsize,
+        )
+        save_svg && savefig(p, joinpath(plot_dir, "histogram_$(title).svg"))
+        save_png && savefig(p, joinpath(plot_dir, "histogram_$(title).png"))
     end
     return test_result
 end
 
-function test_cdf(ρ1, ρ2, condition1, condition2; step=0.1, plot_dir=nothing, title="")
+function test_cdf(ρ1, ρ2, condition1, condition2; step=0.1,
+        plot_dir=nothing, title="", save_png=true, save_svg=true, figsize=(800, 600))
     test_result = ApproximateTwoSampleKSTest(ρ1, ρ2)
 
     if !isnothing(plot_dir)
@@ -85,15 +85,14 @@ function test_cdf(ρ1, ρ2, condition1, condition2; step=0.1, plot_dir=nothing, 
         global_cdf = DataFrame(x=r, y=ecdf(ρ2)(r), condition=condition2)
         cdf_df = vcat(cntx_cdf, global_cdf)
 
-        Gadfly.with_theme(style(grid_line_style=:solid)) do
-            p = Gadfly.plot(
-                cdf_df, x=:x, y=:y, color=:condition,
-                Geom.step, Guide.xlabel("TF-target pair correlation"),
-                Guide.yticks(ticks=[0., 0.25, 0.5, 0.75, 1.])
-            )
-            draw(SVG(joinpath(plot_dir, "cdf_$(title).svg"), 6inch, 4inch), p)
-            draw(PNG(joinpath(plot_dir, "cdf_$(title).png"), 6inch, 4inch), p)
-        end
+        default(size = (800, 600))
+        p = @df cdf_df Plots.plot(:x, :y, group=:condition, linetype=:steppre,
+            xlabel="TF-target pair correlation", ylabel="Cumulative count",
+            yticks=[0., 0.25, 0.5, 0.75, 1.], legend_position=:bottomright,
+            thickness_scaling=2, widen=false, size=figsize,
+        )
+        save_svg && savefig(p, joinpath(plot_dir, "cdf_$(title).svg"))
+        save_png && savefig(p, joinpath(plot_dir, "cdf_$(title).png"))
     end
     return test_result
 end
@@ -114,8 +113,10 @@ function save_effective_gene_set(filename, context_cor, reg_strength)
 end
 
 function train_cdgrns(tfs, prof, true_regulations, clusters, selected::AbstractVector{T},
-                      reg_strength::Real, dir::String, prefix::String) where {T}
+                      reg_strength::Real, dir::String, prefix::String;
+                      return_model=false) where {T}
     cortable = Dict{T,DataFrame}()
+    cdgrns = Dict{T,ContextDependentGRN}()
     for i in selected
         cntx = clusters .== i
         cdgrn = train(ContextDependentGRN, tfs, prof, true_regulations, cntx)
@@ -131,14 +132,21 @@ function train_cdgrns(tfs, prof, true_regulations, clusters, selected::AbstractV
         context_cor.tf_s = [mean(vec(get_gene_expr(tfs, String(g), :Ms))[cntx]) for g in context_cor.tf]
         context_cor.target_u = [mean(vec(get_gene_expr(prof, String(g), :Mu))[cntx]) for g in context_cor.target]
         cortable[i] = context_cor
+        return_model && (cdgrns[i] = cdgrn)
     end
-    return cortable
+    return return_model ? (cortable, cdgrns) : cortable
 end
 
 function train_cdgrns(tfs, prof, true_regulations, contexts, selected_contexts::AbstractVector{Int},
-                      dir::String; reg_strength=0.3, prefix="cdgrn_k")
-    cortable = train_cdgrns(tfs, prof, true_regulations, contexts, selected_contexts,
-                            reg_strength, dir, prefix)
+                      dir::String; reg_strength=0.3, prefix="cdgrn_k",
+                      return_model=false)
+    if return_model
+        cortable, cdgrns = train_cdgrns(tfs, prof, true_regulations, contexts, selected_contexts,
+            reg_strength, dir, prefix, return_model=return_model)
+    else
+        cortable = train_cdgrns(tfs, prof, true_regulations, contexts, selected_contexts,
+            reg_strength, dir, prefix, return_model=return_model)
+    end
 
     i, j = selected_contexts[1], selected_contexts[2]
     joined = outerjoin(cortable[i], cortable[j], on=[:tf, :target], renamecols="_cntx$i"=>"_cntx$j")
@@ -154,7 +162,7 @@ function train_cdgrns(tfs, prof, true_regulations, contexts, selected_contexts::
     end
     CSV.write(joinpath(dir, "$(prefix)_all.csv"), joined)
     
-    return cortable
+    return return_model ? (cortable, cdgrns) : cortable
 end
 
 function train_cdgrns(tfs, prof, true_regulations, cells, selected_cells::AbstractVector{String},

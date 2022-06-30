@@ -1,4 +1,4 @@
-using CDGRN
+using CDGRNs
 using SnowyOwl
 using DataFrames
 using Plots
@@ -7,9 +7,9 @@ gr()
 
 ## Load data
 
-dir = joinpath(CDGRN.PROJECT_PATH, "results", "pancreas")
+dir = joinpath(CDGRNs.PROJECT_PATH, "results", "pancreas")
 prof = load_profile(dir)
-tf_set = CDGRN.load_tfs(joinpath(dir, "tf_set.jld2"))
+tf_set = CDGRNs.load_tfs(joinpath(dir, "tf_set.jld2"))
 tfs = select_genes!(copy(prof), tf_set)
 
 select_high_likelihood!(prof)
@@ -26,7 +26,7 @@ cor_pairs, nonsingle_pairs = regulation_correlation(filename)
 true_regulations, true_reg_pairs = remove_spurious_pairs(cor_pairs, nonsingle_pairs)
 
 k = 5
-filename = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "clustering", "clustermap_pancreatic.png")
+filename = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "clustering", "clustermap_pancreatic.png")
 tree, cell_clusters = build_tree(prof, true_reg_pairs, col_palette=:default, save=filename)
 extract_context!(cell_clusters, tree, k)
 
@@ -34,7 +34,7 @@ extract_context!(cell_clusters, tree, k)
 # Compare context and global
 
 context_cor, selected_context, context_pairs = context_correlation(tfs, prof, true_regulations, cell_clusters.k5, k)
-global_ρs = CDGRN.global_cor(tfs, prof, context_pairs, map(x -> x.size, context_cor.context))
+global_ρs = CDGRNs.global_cor(tfs, prof, context_pairs, map(x -> x.size, context_cor.context))
 test_df = innerjoin(context_cor, global_ρs, on=[:tf, :target], makeunique=true)
 context_ρ = map(x -> x.ρ, test_df.context)
 global_ρ = map(x -> x.ρ, test_df.global)
@@ -44,7 +44,7 @@ test_result = test_cdf(context_ρ, global_ρ, "context", "global"; plot_dir="pic
 
 # Compare spliced only
 
-spliced_ρs = CDGRN.spliced_cor(tfs, prof, context_pairs, cell_clusters.k5, selected_context)
+spliced_ρs = CDGRNs.spliced_cor(tfs, prof, context_pairs, cell_clusters.k5, selected_context)
 test_df2 = innerjoin(context_cor, spliced_ρs, on=[:tf, :target], makeunique=true)
 test_df2.spliced_ρ = map(x -> x.ρ, test_df2.spliced)
 test_df2.context_ρ = map(x -> x.ρ, test_df2.context)
@@ -57,20 +57,20 @@ test_result = test_cdf(test_df2.context_ρ, test_df2.spliced_ρ, "unspliced+spli
 # Visualize PCA
 
 df = get_regulation_expr(prof, tfs, true_regulations)
-p = CDGRN.plot_3d_pca(Array(df[:, 3:end])', cell_clusters.k5)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "cell clusters k5.html")
+p = CDGRNs.plot_3d_pca(Array(df[:, 3:end])', cell_clusters.k5)
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "cell clusters k5.html")
 
 context = cell_clusters.k5 .== 1
-p = CDGRN.plot_2d_pca(Array(df[:, 3:end])', df.cell, context)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "cell clusters k5-1.png")
+p = CDGRNs.plot_2d_pca(Array(df[:, 3:end])', df.cell, context)
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "cell clusters k5-1.png")
 savefig(p, filepath)
 
 
 # Train CDGRNs over contexts
 
-cortable = train_cdgrns(tfs, prof, true_regulations,
+cortable, cdgrns = train_cdgrns(tfs, prof, true_regulations,
     cell_clusters.k5, [1, 2, 3, 4, 5],
-    joinpath(dir, "cdgrn_k5"))
+    joinpath(dir, "cdgrn_k5"), return_model=true)
 
 
 # Network entropy
@@ -90,13 +90,13 @@ p = @df cdgrn_stats plot(:order, [:V, :E],
     xlabel="Context", ylabel="Network size"
 )
 xticks!([1:5;], cdgrn_stats[!,:cntx])
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "network_size k5.png")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "network_size k5.png")
 savefig(p, filepath)
 
 p = @df cdgrn_stats plot(:order, :entropy,
     xlabel="Context", ylabel="Network entropy", legend=false)
 xticks!([1:5;], cdgrn_stats[!,:cntx])
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "network_entropy k5.png")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "network_entropy k5.png")
 savefig(p, filepath)
 
 
@@ -109,113 +109,116 @@ cortable = train_cdgrns(tfs, prof, true_regulations,
 
 # k5: 3
 context = cell_clusters.k5 .== 3
+cdgrn = cdgrns[3]
 
 target = "Ccne2"
 data = make_vis_data(target, tfs, prof, true_regulations, cluster=context)
 p = plot_regulations(data, "E2f1", target, model=cdgrn.models[Symbol(target)])
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-3 regulation $target.html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-3 regulation $target.html")
 savefig(p, filepath)
 # spliced
 p = plot_regulations(data, "E2f1", target, spliced=true)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-3 regulation $target (spliced).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-3 regulation $target (spliced).html")
 savefig(p, filepath)
 # global
 data = make_vis_data(target, tfs, prof, true_regulations)
 p = plot_regulations(data, "E2f1", target)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-3 regulation $target (global).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-3 regulation $target (global).html")
 savefig(p, filepath)
 
 target = "Atad2"
 data = make_vis_data(target, tfs, prof, true_regulations, cluster=context)
 p = plot_regulations(data, "E2f1", target, model=cdgrn.models[Symbol(target)])
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-3 regulation $target.html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-3 regulation $target.html")
 savefig(p, filepath)
 # spliced
 p = plot_regulations(data, "E2f1", target, spliced=true)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-3 regulation $target (spliced).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-3 regulation $target (spliced).html")
 savefig(p, filepath)
 # global
 data = make_vis_data(target, tfs, prof, true_regulations)
 p = plot_regulations(data, "E2f1", target)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-3 regulation $target (global).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-3 regulation $target (global).html")
 savefig(p, filepath)
 
 target = "E2f1"
 data = make_vis_data(target, tfs, prof, true_regulations, cluster=context)
 p = plot_regulations(data, "E2f1", target, model=cdgrn.models[Symbol(target)])
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-3 regulation $target.html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-3 regulation $target.html")
 savefig(p, filepath)
 # spliced
 p = plot_regulations(data, "E2f1", target, spliced=true)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-3 regulation $target (spliced).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-3 regulation $target (spliced).html")
 savefig(p, filepath)
 # global
 data = make_vis_data(target, tfs, prof, true_regulations)
 p = plot_regulations(data, "E2f1", target)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-3 regulation $target (global).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-3 regulation $target (global).html")
 savefig(p, filepath)
 
 
 # k5: 2
 context = cell_clusters.k5 .== 2
+cdgrn = cdgrns[2]
 
 target = "E2f1"
 data = make_vis_data(target, tfs, prof, true_regulations, cluster=context)
 p = plot_regulations(data, "E2f1", target, model=cdgrn.models[Symbol(target)])
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-2 regulation $target.html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-2 regulation $target.html")
 savefig(p, filepath)
 
 
 # k5: 4
 context = cell_clusters.k5 .== 4
+cdgrn = cdgrns[4]
 
 target = "Pax6"
 data = make_vis_data(target, tfs, prof, true_regulations, cluster=context)
 p = plot_regulations(data, "Pax6", "Pdx1", target, model=cdgrn.models[Symbol(target)])
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target.html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target.html")
 savefig(p, filepath)
 
 target = "Naaladl2"
 data = make_vis_data(target, tfs, prof, true_regulations, cluster=context)
 p = plot_regulations(data, "Elf5", target)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target.html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target.html")
 savefig(p, filepath)
 # spliced
 p = plot_regulations(data, "Elf5", target, spliced=true)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target (spliced).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target (spliced).html")
 savefig(p, filepath)
 # global
 data = make_vis_data(target, tfs, prof, true_regulations)
 p = plot_regulations(data, "Elf5", target)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target (global).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target (global).html")
 savefig(p, filepath)
 
 
 target = "Cpe"
 data = make_vis_data(target, tfs, prof, true_regulations, cluster=context)
 p = plot_regulations(data, "Nr3c1", target)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target.html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target.html")
 savefig(p, filepath)
 # spliced
 p = plot_regulations(data, "Nr3c1", target, spliced=true)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target (spliced).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target (spliced).html")
 savefig(p, filepath)
 # global
 data = make_vis_data(target, tfs, prof, true_regulations)
 p = plot_regulations(data, "Nr3c1", target)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target (global).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target (global).html")
 savefig(p, filepath)
 
 
 target = "Vdr"
 data = make_vis_data(target, tfs, prof, true_regulations, cluster=context)
 p = plot_regulations(data, "Vdr", "E2f1", target, model=cdgrn.models[Symbol(target)])
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target.html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target.html")
 savefig(p, filepath)
 # global
 data = make_vis_data(target, tfs, prof, true_regulations)
 p = plot_regulations(data, "Vdr", "E2f1", target, model=cdgrn.models[Symbol(target)])
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target (global).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "tf-gene gmm model", "CDGRN", "k5-4 regulation $target (global).html")
 savefig(p, filepath)
 
 target = "Rimbp2"

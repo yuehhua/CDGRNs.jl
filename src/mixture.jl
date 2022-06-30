@@ -1,6 +1,3 @@
-using GLM
-using GaussianMixtures
-
 abstract type AbstractMixtureRegression <: AbstractRegression end
 
 struct MixtureRegression{K,R,T<:Integer,S} <: AbstractMixtureRegression

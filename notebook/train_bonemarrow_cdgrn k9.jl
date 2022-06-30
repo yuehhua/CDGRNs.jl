@@ -1,4 +1,4 @@
-using CDGRN
+using CDGRNs
 using SnowyOwl
 using DataFrames
 using Plots
@@ -7,9 +7,9 @@ gr()
 
 ## Load data
 
-dir = joinpath(CDGRN.PROJECT_PATH, "results", "bonemarrow")
+dir = joinpath(CDGRNs.PROJECT_PATH, "results", "bonemarrow")
 prof = load_profile(dir)
-tf_set = CDGRN.load_tfs(joinpath(dir, "tf_set.jld2"))
+tf_set = CDGRNs.load_tfs(joinpath(dir, "tf_set.jld2"))
 tfs = select_genes!(copy(prof), tf_set)
 
 select_high_likelihood!(prof)
@@ -26,19 +26,19 @@ cor_pairs, nonsingle_pairs = regulation_correlation(filename)
 true_regulations, true_reg_pairs = remove_spurious_pairs(cor_pairs, nonsingle_pairs)
 
 k = 9
-filename = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "clustering", "clustermap_bonemarrow.png")
+filename = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "clustering", "clustermap_bonemarrow.png")
 tree, cell_clusters = build_tree(prof, true_reg_pairs, col_palette=:glasbey_hv_n256, save=filename)
 extract_context!(cell_clusters, tree, k)
 
 # Visualize PCA
 
 df = get_regulation_expr(prof, tfs, true_regulations)
-p = CDGRN.plot_3d_pca(Array(df[:, 3:end])', cell_clusters.k9)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "cell clusters k9.html")
+p = CDGRNs.plot_3d_pca(Array(df[:, 3:end])', cell_clusters.k9)
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "cell clusters k9.html")
 
 context = cell_clusters.k9 .== 2
-p = CDGRN.plot_2d_pca(Array(df[:, 3:end])', df.cell, context, xaxis=1, yaxis=3)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "cell clusters k9-2.png")
+p = CDGRNs.plot_2d_pca(Array(df[:, 3:end])', df.cell, context, xaxis=1, yaxis=3)
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "cell clusters k9-2.png")
 savefig(p, filepath)
 
 
@@ -66,13 +66,13 @@ p = @df cdgrn_stats plot(:order, [:V, :E],
     xlabel="Context", ylabel="Network size"
 )
 xticks!([1:4;], cdgrn_stats[!,:cntx])
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "network_size k9.png")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "network_size k9.png")
 savefig(p, filepath)
 
 p = @df cdgrn_stats plot(:order, :entropy,
     xlabel="Context", ylabel="Network entropy", legend=false)
 xticks!([1:4;], cdgrn_stats[!,:cntx])
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "network_entropy k9.png")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "network_entropy k9.png")
 savefig(p, filepath)
 
 
@@ -82,46 +82,46 @@ savefig(p, filepath)
 target = "Ccne2"
 data = make_vis_data(target, tfs, prof, true_regulations, cluster=context)
 p = plot_regulations(data, "E2f1", target, model=cdgrn.models[Symbol(target)])
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-3 regulation $target.html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-3 regulation $target.html")
 savefig(p, filepath)
 # spliced
 p = plot_regulations(data, "E2f1", target, spliced=true)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-3 regulation $target (spliced).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-3 regulation $target (spliced).html")
 savefig(p, filepath)
 # global
 data = make_vis_data(target, tfs, prof, true_regulations)
 p = plot_regulations(data, "E2f1", target)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-3 regulation $target (global).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-3 regulation $target (global).html")
 savefig(p, filepath)
 
 target = "Atad2"
 data = make_vis_data(target, tfs, prof, true_regulations, cluster=context)
 p = plot_regulations(data, "E2f1", target, model=cdgrn.models[Symbol(target)])
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-3 regulation $target.html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-3 regulation $target.html")
 savefig(p, filepath)
 # spliced
 p = plot_regulations(data, "E2f1", target, spliced=true)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-3 regulation $target (spliced).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-3 regulation $target (spliced).html")
 savefig(p, filepath)
 # global
 data = make_vis_data(target, tfs, prof, true_regulations)
 p = plot_regulations(data, "E2f1", target)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-3 regulation $target (global).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-3 regulation $target (global).html")
 savefig(p, filepath)
 
 target = "E2f1"
 data = make_vis_data(target, tfs, prof, true_regulations, cluster=context)
 p = plot_regulations(data, "E2f1", target, model=cdgrn.models[Symbol(target)])
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-3 regulation $target.html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-3 regulation $target.html")
 savefig(p, filepath)
 # spliced
 p = plot_regulations(data, "E2f1", target, spliced=true)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-3 regulation $target (spliced).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-3 regulation $target (spliced).html")
 savefig(p, filepath)
 # global
 data = make_vis_data(target, tfs, prof, true_regulations)
 p = plot_regulations(data, "E2f1", target)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-3 regulation $target (global).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-3 regulation $target (global).html")
 savefig(p, filepath)
 
 
@@ -130,7 +130,7 @@ savefig(p, filepath)
 target = "E2f1"
 data = make_vis_data(target, tfs, prof, true_regulations, cluster=context)
 p = plot_regulations(data, "E2f1", target, model=cdgrn.models[Symbol(target)])
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-2 regulation $target.html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-2 regulation $target.html")
 savefig(p, filepath)
 
 
@@ -139,54 +139,54 @@ savefig(p, filepath)
 target = "Pax6"
 data = make_vis_data(target, tfs, prof, true_regulations, cluster=context)
 p = plot_regulations(data, "Pax6", "Pdx1", target, model=cdgrn.models[Symbol(target)])
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-4 regulation $target.html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-4 regulation $target.html")
 savefig(p, filepath)
 
 target = "Naaladl2"
 data = make_vis_data(target, tfs, prof, true_regulations, cluster=context)
 p = plot_regulations(data, "Elf5", target)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-4 regulation $target.html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-4 regulation $target.html")
 savefig(p, filepath)
 # spliced
 p = plot_regulations(data, "Elf5", target, spliced=true)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-4 regulation $target (spliced).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-4 regulation $target (spliced).html")
 savefig(p, filepath)
 # global
 data = make_vis_data(target, tfs, prof, true_regulations)
 p = plot_regulations(data, "Elf5", target)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-4 regulation $target (global).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-4 regulation $target (global).html")
 savefig(p, filepath)
 
 
 target = "Cpe"
 data = make_vis_data(target, tfs, prof, true_regulations, cluster=context)
 p = plot_regulations(data, "Nr3c1", target)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-4 regulation $target.html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-4 regulation $target.html")
 savefig(p, filepath)
 # spliced
 p = plot_regulations(data, "Nr3c1", target, spliced=true)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-4 regulation $target (spliced).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-4 regulation $target (spliced).html")
 savefig(p, filepath)
 # global
 data = make_vis_data(target, tfs, prof, true_regulations)
 p = plot_regulations(data, "Nr3c1", target)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-4 regulation $target (global).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-4 regulation $target (global).html")
 savefig(p, filepath)
 
 
 target = "Vdr"
 data = make_vis_data(target, tfs, prof, true_regulations, cluster=context)
 p = plot_regulations(data, "Vdr", "E2f1", target, model=cdgrn.models[Symbol(target)])
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-4 regulation $target.html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-4 regulation $target.html")
 savefig(p, filepath)
 # spliced
 p = plot_regulations(data, "Vdr", "E2f1", target, spliced=true)
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-4 regulation $target (spliced).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-4 regulation $target (spliced).html")
 savefig(p, filepath)
 # global
 data = make_vis_data(target, tfs, prof, true_regulations)
 p = plot_regulations(data, "Vdr", "E2f1", target, model=cdgrn.models[Symbol(target)])
-filepath = joinpath(CDGRN.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-4 regulation $target (global).html")
+filepath = joinpath(CDGRNs.PROJECT_PATH, "pics", "bonemarrow", "CDGRN", "k9-4 regulation $target (global).html")
 savefig(p, filepath)
 
 target = "Rimbp2"

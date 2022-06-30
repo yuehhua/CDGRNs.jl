@@ -1,12 +1,8 @@
-using GLM
-using Statistics
-
-T = Float64
-n = 100
-d = 5
-
 @testset "GMR" begin
     # Gaussian mixture regression
+    T = Float64
+    n = 100
+    d = 5
 
     w = [1., 2., 3., 4., 5]
     b = -1.0
