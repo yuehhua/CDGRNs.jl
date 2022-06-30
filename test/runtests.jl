@@ -6,7 +6,7 @@ using SnowyOwl
 using Test
 
 tests = [
-    "data",
+    # "data",
     "regression",
     "metrics",
     # "mixture",
