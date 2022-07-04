@@ -54,49 +54,6 @@ function context_correlation(tfs, prof, true_regulations, context, k)
     return context_cor, selected_context, context_pairs
 end
 
-function test_pmf(ρ1, ρ2, condition1, condition2; α=0.7, bincount=30,
-        plot_dir=nothing, title="", save_png=true, save_svg=true, figsize=(800, 600))
-    test_result = MannWhitneyUTest(abs.(ρ1), abs.(ρ2))
-
-    if !isnothing(plot_dir)
-        ρ = vcat(ρ1, ρ2)
-        condition = vcat(repeat([condition1], length(ρ1)), repeat([condition2], length(ρ2)))
-        plot_df = DataFrame(ρ=ρ, condition=condition)
-        bins = range(minimum(plot_df[!, :ρ]), stop=maximum(plot_df[!, :ρ]), length=bincount)
-
-        p = @df plot_df histogram(:ρ, group=:condition, bins=bins,
-            fillalpha=α, bar_edges=false,
-            xlabel="TF-target pair correlation", ylabel="Count",
-            thickness_scaling=2, widen=false, size=figsize,
-        )
-        save_svg && savefig(p, joinpath(plot_dir, "histogram_$(title).svg"))
-        save_png && savefig(p, joinpath(plot_dir, "histogram_$(title).png"))
-    end
-    return test_result
-end
-
-function test_cdf(ρ1, ρ2, condition1, condition2; step=0.1,
-        plot_dir=nothing, title="", save_png=true, save_svg=true, figsize=(800, 600))
-    test_result = ApproximateTwoSampleKSTest(ρ1, ρ2)
-
-    if !isnothing(plot_dir)
-        r = -1.0:step:1.0
-        cntx_cdf = DataFrame(x=r, y=ecdf(ρ1)(r), condition=condition1)
-        global_cdf = DataFrame(x=r, y=ecdf(ρ2)(r), condition=condition2)
-        cdf_df = vcat(cntx_cdf, global_cdf)
-
-        default(size = (800, 600))
-        p = @df cdf_df Plots.plot(:x, :y, group=:condition, linetype=:steppre,
-            xlabel="TF-target pair correlation", ylabel="Cumulative count",
-            yticks=[0., 0.25, 0.5, 0.75, 1.], legend_position=:bottomright,
-            thickness_scaling=2, widen=false, size=figsize,
-        )
-        save_svg && savefig(p, joinpath(plot_dir, "cdf_$(title).svg"))
-        save_png && savefig(p, joinpath(plot_dir, "cdf_$(title).png"))
-    end
-    return test_result
-end
-
 function save_cdgrn(filename, cdgrn, tfs, prof, cntx)
     context_cor = CDGRNs.cor(cdgrn, tfs, prof, cntx)
     context_cor = context_cor[.!isnan.(context_cor.ρ), :]

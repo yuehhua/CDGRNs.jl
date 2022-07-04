@@ -9,13 +9,8 @@ using Distances
 # using FileIO: load
 using GaussianMixtureRegressions
 using Graphs
-# using MultivariateStats
-using PyCall
 using SnowyOwl
-using Colors
-using Plots, StatsPlots
 using SimpleWeightedGraphs
-using HypothesisTests
 
 const PROJECT_PATH = dirname(@__DIR__)
 
@@ -77,9 +72,11 @@ include("utils.jl")
 include("clustering.jl")
 
 include("plots.jl")
-include("cdgrn.jl")
+include("model.jl")
 include("graph.jl")
 
 include("interface.jl")
+
+include("plots/Plots.jl")
 
 end # module
