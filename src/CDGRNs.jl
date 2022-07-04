@@ -1,32 +1,21 @@
 module CDGRNs
 
-using GaussianMixtures
-using GaussianMixtures: GaussianMixture, size
-using LinearAlgebra
 using Missings
-using SparseArrays
-using Statistics
 
 using Clustering
 using CSV
 using DataFrames
 using Distances
-using Distributions
-using FileIO: load
+# using FileIO: load
+using GaussianMixtureRegressions
 using Graphs
-using MultivariateStats
+# using MultivariateStats
 using PyCall
 using SnowyOwl
-using StatsBase
 using Colors
 using Plots, StatsPlots
 using SimpleWeightedGraphs
 using HypothesisTests
-using GLM
-
-import Statistics: std, cor
-import GLM: fit, predict, coef, stderror, loglikelihood, dof, nobs
-import StatsBase: dof, nobs, fit!
 
 const PROJECT_PATH = dirname(@__DIR__)
 
@@ -67,45 +56,6 @@ export
     kmeans_clustering,
     assign_clusters,
 
-    # regression
-    # LinearRegression,
-    AbstractGMR,
-    NullGMR,
-    GMR,
-    coef,
-    std,
-    stderror,
-    ncoef,
-    nobs,
-    design_matrix,
-    predict,
-    fit, fit!,
-    residual,
-    likelihood,
-    correlation,
-
-    # mixture
-    # MixtureRegression,
-    # hard_split,
-    # probabilistic_split,
-    # maximize_likelihood!,
-    # update_expectation!,
-    # fit!,
-    # fit,
-
-    # metrics
-    loglikelihood,
-    membership,
-    aic,
-    bic,
-    
-    # validation
-    validate_score,
-    grid_search,
-    best_result,
-    best_score,
-    best_model,
-
     # plot
     make_vis_data,
     plot_regulations,
@@ -125,10 +75,6 @@ include("preprocess.jl")
 include("utils.jl")
 
 include("clustering.jl")
-include("regression.jl")
-include("mixture.jl")
-include("metrics.jl")
-include("validation.jl")
 
 include("plots.jl")
 include("cdgrn.jl")
