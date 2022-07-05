@@ -302,3 +302,62 @@ end
 #     H = S ./ maximum(S)
 #     return mean(H)
 # end
+
+function train_cdgrns(tfs, prof, true_regulations, clusters, selected::AbstractVector{T},
+        reg_strength::Real, dir::String, prefix::String;
+        return_model=false) where {T}
+    cortable = Dict{T,DataFrame}()
+    cdgrns = Dict{T,ContextDependentGRN}()
+    for i in selected
+        cntx = clusters .== i
+        cdgrn = train(ContextDependentGRN, tfs, prof, true_regulations, cntx)
+        evaluate!(cdgrn)
+
+        filename = joinpath(dir, "$(prefix)-$(i).csv")
+        context_cor = save_cdgrn(filename, cdgrn, tfs, prof, cntx)
+
+        filename = joinpath(dir, "$(prefix)-$(i)_gene_set.csv")
+        save_effective_gene_set(filename, context_cor, reg_strength)
+
+        ## add gene expression
+        context_cor.tf_s = [mean(vec(get_gene_expr(tfs, String(g), :Ms))[cntx]) for g in context_cor.tf]
+        context_cor.target_u = [mean(vec(get_gene_expr(prof, String(g), :Mu))[cntx]) for g in context_cor.target]
+        cortable[i] = context_cor
+        return_model && (cdgrns[i] = cdgrn)
+    end
+    return return_model ? (cortable, cdgrns) : cortable
+end
+
+function train_cdgrns(tfs, prof, true_regulations, contexts, selected_contexts::AbstractVector{Int},
+        dir::String; reg_strength=0.3, prefix="cdgrn_k",
+        return_model=false)
+    if return_model
+        cortable, cdgrns = train_cdgrns(tfs, prof, true_regulations, contexts, selected_contexts,
+        reg_strength, dir, prefix, return_model=return_model)
+    else
+        cortable = train_cdgrns(tfs, prof, true_regulations, contexts, selected_contexts,
+        reg_strength, dir, prefix, return_model=return_model)
+    end
+
+    i, j = selected_contexts[1], selected_contexts[2]
+    joined = outerjoin(cortable[i], cortable[j], on=[:tf, :target], renamecols="_cntx$i"=>"_cntx$j")
+    for i in selected_contexts[3:end]
+        joined = outerjoin(joined, cortable[i], on=[:tf, :target], renamecols=""=>"_cntx$i")
+    end
+
+    for i in selected_contexts
+        replace!(joined[!, Symbol("ρ_cntx$i")], missing=>0)
+        replace!(joined[!, Symbol("reg_stng_cntx$i")], missing=>0)
+        replace!(joined[!, Symbol("tf_s_cntx$i")], missing=>0)
+        replace!(joined[!, Symbol("target_u_cntx$i")], missing=>0)
+    end
+    CSV.write(joinpath(dir, "$(prefix)_all.csv"), joined)
+
+    return return_model ? (cortable, cdgrns) : cortable
+end
+
+function train_cdgrns(tfs, prof, true_regulations, cells, selected_cells::AbstractVector{String},
+        dir::String; reg_strength=0.3, prefix="cdgrn_k")
+    return train_cdgrns(tfs, prof, true_regulations, cells, selected_cells,
+        reg_strength, dir, prefix)
+end

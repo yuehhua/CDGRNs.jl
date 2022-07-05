@@ -1,4 +1,5 @@
 module Plots
+
 using Colors
 using DataFrames
 using MultivariateStats
@@ -7,6 +8,11 @@ using PyCall
 gr()
 
 const PROJECT_PATH = dirname(dirname(@__DIR__))
+
+export 
+    # tests
+    test_pmf,
+    test_cdf
 
 include("utils.jl")
 include("tree.jl")

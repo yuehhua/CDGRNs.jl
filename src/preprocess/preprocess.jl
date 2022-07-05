@@ -1,14 +1,3 @@
-function make_graph(data::DataFrame, encoding::Dict, graph_size::Int, n::Int=nrow(data);
-                    rev::Bool=false)
-    dg = SimpleDiGraph{UInt32}(graph_size)
-    for i = 1:n
-        g = encoding[data[i, :gene_symbol]]
-        tf = encoding[data[i, :tf_symbol]]
-        rev ? add_edge!(dg, tf, g) : add_edge!(dg, g, tf)
-    end
-    dg
-end
-
 function get_regulation_expr(prof::Profile, tfs::Profile, true_reg::DataFrame; labels=:clusters)
     tf_list = unique(true_reg.tf)
     gene_list = unique(true_reg.target)
@@ -21,4 +10,16 @@ function get_regulation_expr(prof::Profile, tfs::Profile, true_reg::DataFrame; l
         df[:, Symbol(tf * "_s")] = vec(get_gene_expr(tfs, tf, :Ms))
     end
     return df
+end
+
+function build_graph(df::DataFrame)
+    gene_set = unique!(vcat(df.tf, df.target))
+    N = length(gene_set)
+    sg = SimpleDiGraph(N)
+    for (tf, targ) in zip(df.tf, df.target)
+        i = findfirst(gene_set .== tf)
+        j = findfirst(gene_set .== targ)
+        add_edge!(sg, i, j)
+    end
+    return sg
 end
