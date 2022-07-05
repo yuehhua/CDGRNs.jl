@@ -1,9 +1,18 @@
 module Analysis
 
+using Statistics
+
 using Clustering
 using DataFrames
 using Distances
+using GaussianMixtureRegressions
+using GLM
+using Graphs
 using HypothesisTests
+using MultivariateStats
+using SimpleWeightedGraphs
+using SnowyOwl
+using StatsBase
 
 export 
     # clustering
@@ -25,7 +34,13 @@ export
     test_cdf
 
 include("clustering.jl")
+include("tree.jl")
 include("regulations.jl")
+include("visualization.jl")
+include("correlations.jl")
 include("tests.jl")
+include("model.jl")
+include("entropy.jl")
+include("io.jl")
 
 end

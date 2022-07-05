@@ -54,3 +54,17 @@ function load_CHEA(dirpath::String)
     regulations.target = data.source[2:end]
     return regulations
 end
+
+function get_regulation_expr(prof::Profile, tfs::Profile, true_reg::DataFrame; labels=:clusters)
+    tf_list = unique(true_reg.tf)
+    gene_list = unique(true_reg.target)
+    
+    df = DataFrame(cell=prof.obs[!,labels], time=prof.obs.latent_time)
+    for gene in gene_list
+        df[:, Symbol(gene * "_u")] = vec(get_gene_expr(prof, gene, :Mu))
+    end
+    for tf in tf_list
+        df[:, Symbol(tf * "_s")] = vec(get_gene_expr(tfs, tf, :Ms))
+    end
+    return df
+end

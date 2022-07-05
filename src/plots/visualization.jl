@@ -1,8 +1,3 @@
-function pca_transform(data::AbstractMatrix; dims=3)
-    model = fit(PCA, data; maxoutdim=dims)
-    return MultivariateStats.transform(model, data)'
-end
-
 function plot_3d_pca(data::AbstractMatrix, labels::AbstractVector)
     pc = pca_transform(data)
     p = Plots.scatter(pc[:, 1], pc[:, 2], pc[:, 3], group=labels, markersize=1, markerstrokewidth=0,
@@ -31,3 +26,13 @@ function plot_2d_pca(data::AbstractMatrix, labels::AbstractVector, context::Abst
                       xlabel="PC$xaxis", ylabel="PC$yaxis")
     return p
 end
+
+# function umap()
+#     plot_configs = (markersize=2, markerstrokewidth=0, dpi=300, size=(1000, 600), thickness_scaling=2, widen=false)
+
+#     p = @df df scatter(:UMAP1, :UMAP2; group=:cell, xlabel="UMAP1", ylabel="UMAP2", color_palette=:glasbey_hv_n256,
+#         legend=:outertopright, markersize=2, markerstrokewidth=0,
+#         dpi=300, size=(1000, 600), thickness_scaling=2, widen=false)
+#     savefig(p, joinpath(fig_dir, "UMAP", "umap-cell type.svg"))
+#     savefig(p, joinpath(fig_dir, "UMAP", "umap-cell type.png"))
+# end

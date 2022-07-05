@@ -1,9 +1,14 @@
 module Preprocess
 
+using SparseArrays
+
 using CSV
 using DataFrames
 using FileIO: load
+using GaussianMixtureRegressions
 using SnowyOwl
+
+const PROJECT_PATH = dirname(dirname(@__DIR__))
 
 export 
     # data
