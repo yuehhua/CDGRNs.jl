@@ -1,17 +1,15 @@
 module CDGRNs
 
 using CSV
+using DataFrames
 using GaussianMixtureRegressions
 using Graphs
 using SimpleWeightedGraphs
+using SnowyOwl
 
 const PROJECT_PATH = dirname(@__DIR__)
 
 export
-    # utils
-    make_mapping,
-    make_graph,
-
     # model
     corr_table,
     ContextDependentGRN,

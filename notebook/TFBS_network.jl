@@ -1,6 +1,6 @@
 using CSV, DataFrames
-using JLD2
-using CDGRN
+using JLD2, FileIO
+using CDGRNs
 
 
 # Load data
@@ -16,7 +16,7 @@ hgnc = CSV.File(joinpath(dir, "hgnc_info.csv")) |> DataFrame
 tf_set = Set(tf.hgnc_id)  # 1990
 
 # To hgnc id
-ensemble2hgnc = make_mapping(hgnc, :ensembl_gene_id=>:hgnc_id)
+ensemble2hgnc = CDGRNs.make_mapping(hgnc, :ensembl_gene_id=>:hgnc_id)
 
 gene_ids = map(x -> split(x, '.')[1], gene_tf.gene_id)
 gene_tf.gene_hgnc = map(x -> get(ensemble2hgnc, x, missing), gene_ids)
@@ -30,8 +30,8 @@ gene_list = CSV.File(joinpath(dir, "gene_list.csv")) |> DataFrame
 hgnc = hgnc[map(x -> x in gene_list.symbol, hgnc.symbol), :]
 
 # To gene symbol
-ensemble2symb = make_mapping(hgnc, :ensembl_gene_id=>:symbol)
-hgnc2symb = make_mapping(hgnc, :hgnc_id=>:symbol)
+ensemble2symb = CDGRNs.make_mapping(hgnc, :ensembl_gene_id=>:symbol)
+hgnc2symb = CDGRNs.make_mapping(hgnc, :hgnc_id=>:symbol)
 
 gene_ids = map(x -> split(x, '.')[1], gene_tf.gene_id)
 gene_tf.gene_symbol = map(x -> get(ensemble2symb, x, missing), gene_ids)
@@ -55,9 +55,9 @@ tf_set = sort([x for x = tf_set])
 gene2num = Dict(x => i for (i, x) in enumerate(gene_set))
 
 # reverse arrow means genes are regulated by TFs
-dg = make_graph(gene_tf, gene2num, length(gene_set))
+dg = CDGRNs.make_graph(gene_tf, gene2num, length(gene_set))
 
-@save "results/tf_gene_network.jld2" dg
-@save "results/gene_set.jld2" gene_set
-@save "results/tf_set.jld2" tf_set
-@save "results/gene2num.jld2" gene2num
+save("results/tf_gene_network.jld2", "dg", dg)
+save("results/gene_set.jld2", "gene_set", gene_set)
+save("results/tf_set.jld2", "tf_set", tf_set)
+save("results/gene2num.jld2", "gene2num", gene2num)
