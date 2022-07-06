@@ -11,14 +11,14 @@ function corr_table(pairs)
     return df
 end
 
-function make_pairset(reg::DataFrame)
-    return Set(map((x,y) -> (uppercase(x), uppercase(y)), reg.tf, reg.target))
-end
+make_pairset(reg::DataFrame) = Set(convert_pairs(uppercase, reg.tf, reg.target))
 
 function query_pairset(corr_pairs::DataFrame, reg_pairs::Set)
-    query_pairs = map((x,y) -> (uppercase(x), uppercase(y)), corr_pairs.tf, corr_pairs.target)
-    return map(x -> x in reg_pairs, query_pairs)
+    query_pairs = convert_pairs(uppercase, corr_pairs.tf, corr_pairs.target)
+    return [x in reg_pairs for x in query_pairs]
 end
+
+convert_pairs(f, xs, ys) = [(f(x), f(y)) for (x, y) in zip(xs, ys)]
 
 function build_graph(df::DataFrame)
     gene_set = unique!(vcat(df.tf, df.target))

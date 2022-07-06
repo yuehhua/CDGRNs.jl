@@ -1,5 +1,5 @@
-function plot_regulations(data::DataFrame, x::String, y::String, z::String; model=nothing, spliced=false,
-    figsize=(1000, 600))
+function regulations(data::DataFrame, x::String, y::String, z::String; model=nothing, spliced=false,
+                     savepath::String=@__DIR__, title="", save=[:svg, :png], figsize=(1000, 600))
     x_sym = Symbol(x * "_s")
     y_sym = Symbol(y * "_s")
     z_sym = spliced ? Symbol(z * "_s") : Symbol(z * "_u")
@@ -17,11 +17,12 @@ function plot_regulations(data::DataFrame, x::String, y::String, z::String; mode
         plot!(p, x, y, (x,y) -> predict(model, [x, y]'), st=:surface,
             c=:grey, fillalpha=0.7, cb=false)
     end
+    savefig(p, joinpath(savepath, "regulation_$(title)"), save)
     return p
 end
 
-function plot_regulations(data::DataFrame, x::String, y::String; model=nothing, spliced=false,
-    figsize=(1000, 600))
+function regulations(data::DataFrame, x::String, y::String; model=nothing, spliced=false,
+                     savepath::String=@__DIR__, title="", save=[:svg, :png],  figsize=(1000, 600))
     x_sym = Symbol(x * "_s")
     y_sym = spliced ? Symbol(y * "_s") : Symbol(y * "_u")
     xlabel = "Spliced mRNA of $x"
@@ -36,5 +37,6 @@ function plot_regulations(data::DataFrame, x::String, y::String; model=nothing, 
         plot!(p, x, y -> predict(model, [y]'), st=:surface,
             c=:grey, fillalpha=0.7, cb=false)
     end
+    savefig(p, joinpath(savepath, "regulation_$(title)"), save)
     return p
 end
