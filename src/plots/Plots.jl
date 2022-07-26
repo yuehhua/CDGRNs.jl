@@ -17,5 +17,6 @@ include("tree.jl")
 include("regulations.jl")
 include("visualization.jl")
 include("tests.jl")
+include("landscapes.jl")
     
 end
