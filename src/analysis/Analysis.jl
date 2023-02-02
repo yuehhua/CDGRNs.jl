@@ -2,7 +2,9 @@ module Analysis
 
 using Statistics
 
+using AxisArrays
 using Clustering
+using CSV
 using DataFrames
 using Distances
 using GaussianMixtureRegressions
@@ -14,7 +16,7 @@ using SimpleWeightedGraphs
 using SnowyOwl
 using StatsBase
 
-export 
+export
     # clustering
     clustering,
     gmm_clustering,

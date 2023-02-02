@@ -2,6 +2,7 @@ module Plots
 
 using Colors
 using DataFrames
+using GaussianMixtureRegressions
 using MultivariateStats
 using Plots, StatsPlots
 using PyCall
@@ -18,5 +19,5 @@ include("regulations.jl")
 include("visualization.jl")
 include("tests.jl")
 include("landscapes.jl")
-    
+
 end

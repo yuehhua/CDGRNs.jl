@@ -7,7 +7,7 @@ tests = [
     # "data",
 ]
 
-@testset "GRN" begin
+@testset "CDGRNs" begin
     for t in tests
         include("$(t).jl")
     end

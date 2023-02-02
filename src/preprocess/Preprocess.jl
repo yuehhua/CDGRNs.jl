@@ -7,10 +7,11 @@ using DataFrames
 using FileIO: load
 using GaussianMixtureRegressions
 using SnowyOwl
+using OmicsProfiles
 
 const PROJECT_PATH = dirname(dirname(@__DIR__))
 
-export 
+export
     # data
     load_data,
     add_unspliced_data!,
@@ -27,8 +28,8 @@ export
     remove_spurious_pairs,
 
     # preprocess
-    get_regulation_expr   
-    
+    get_regulation_expr
+
 include("data.jl")
 include("pipeline.jl")
 include("preprocess.jl")

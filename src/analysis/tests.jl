@@ -6,7 +6,7 @@ function context_correlation(tfs, prof, true_regulations, context, k)
     return context_cor, selected_context, context_pairs
 end
 
-function cor(tfs::Profile, prof::Profile, pairs::Vector, clusters::Vector{<:Integer}; unspliced=true)
+function cor(tfs::OmicsProfile, prof::OmicsProfile, pairs::Vector, clusters::Vector{<:Integer}; unspliced=true)
     M = unspliced ? :Mu : :Ms
     df = DataFrame()
     df[!, :tf] = map(x -> x[1], pairs)
@@ -28,7 +28,7 @@ function cor(tfs::Profile, prof::Profile, pairs::Vector, clusters::Vector{<:Inte
     return df[not_nan, :]
 end
 
-function global_cor(tfs::Profile, prof::Profile, pairs::Vector, nsample::Vector{<:Integer})
+function global_cor(tfs::OmicsProfile, prof::OmicsProfile, pairs::Vector, nsample::Vector{<:Integer})
     df = DataFrame()
     df[!, :tf] = map(x -> x[1], pairs)
     df[!, :target] = map(x -> x[2], pairs)
@@ -44,7 +44,7 @@ function global_cor(tfs::Profile, prof::Profile, pairs::Vector, nsample::Vector{
     return df[map(x -> !isnan(x.ρ), res), :]
 end
 
-function spliced_cor(tfs::Profile, prof::Profile, pairs::Vector, clusters::Vector{<:Integer}, context::Vector{<:Integer})
+function spliced_cor(tfs::OmicsProfile, prof::OmicsProfile, pairs::Vector, clusters::Vector{<:Integer}, context::Vector{<:Integer})
     df = DataFrame()
     df[!, :tf] = map(x -> x[1], pairs)
     df[!, :target] = map(x -> x[2], pairs)

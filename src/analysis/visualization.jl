@@ -1,5 +1,5 @@
 function pca(data::AbstractMatrix; dims=3)
-    model = fit(PCA, data; maxoutdim=dims)
+    model = fit(PCA, data; maxoutdim=dims, pratio=1.)
     return MultivariateStats.transform(model, data)'
 end
 

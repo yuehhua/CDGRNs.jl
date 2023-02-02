@@ -1,4 +1,5 @@
 cor(x::AbstractVector, y::AbstractVector, zs...) = [Statistics.cor(x, y), cor(x, zs...)...]
+cor(x::AxisArray, y::AxisArray) = Statistics.cor(collect(x), collect(y))
 
 partial_corr(xs::AbstractVector, ys::AbstractVector) = cor(xs, ys)
 

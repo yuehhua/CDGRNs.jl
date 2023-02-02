@@ -4,15 +4,15 @@ struct ContextDependentGRN{T,S}
     scores::DataFrame
 end
 
-function train(::Type{ContextDependentGRN}, tfs::Profile, prof::Profile, pairs::DataFrame, context; target::Symbol=:target, unspliced=true)
-    M = unspliced ? :Mu : :Ms
+function train(::Type{ContextDependentGRN}, tfs::OmicsProfile, prof::OmicsProfile, pairs::DataFrame, context; target::Symbol=:target, unspliced=true)
+    M = unspliced ? prof.Mu : prof.Ms
     targets = unique(pairs[!, target])
     models = []
     tf_sets = []
     for targ in targets
         tf_set = unique(pairs.tf[pairs.target .== targ])
-        y = vec(get_gene_expr(prof, targ, M))[context]
-        X = hcat(map(tf -> vec(get_gene_expr(tfs, tf, :Ms)), tf_set)...)[context, :]
+        y = vec(M[targ, :])[context]
+        X = hcat(map(tf -> vec(tfs.Ms[tf, :]), tf_set)...)[context, :]
         push!(models, fit(LinearModel, X, y))
         push!(tf_sets, tf_set)
     end
@@ -22,14 +22,14 @@ function train(::Type{ContextDependentGRN}, tfs::Profile, prof::Profile, pairs::
     return ContextDependentGRN(res1, res2, scores)
 end
 
-function train(::Type{ContextDependentGRN}, tfs::Profile, prof::Profile, pairs::DataFrame; target::Symbol=:target)
+function train(::Type{ContextDependentGRN}, tfs::OmicsProfile, prof::OmicsProfile, pairs::DataFrame; target::Symbol=:target)
     targets = unique(pairs[!, target])
     models = []
     tf_sets = []
     for targ in targets
         tf_set = unique(pairs.tf[pairs.target .== targ])
-        y = collect(vec(get_gene_expr(prof, targ, :Mu)))
-        X = hcat(map(tf -> vec(get_gene_expr(tfs, tf, :Ms)), tf_set)...)
+        y = collect(vec(prof.Mu[targ, :]))
+        X = hcat(map(tf -> vec(tfs.Ms[tf, :]), tf_set)...)
         push!(models, fit(LinearModel, X, y))
         push!(tf_sets, tf_set)
     end
@@ -50,14 +50,14 @@ function evaluate!(grn::ContextDependentGRN)
     return grn
 end
 
-function cor(cdgrn::ContextDependentGRN, tfs::Profile, prof::Profile, context::BitVector; unspliced=true)
-    M = unspliced ? :Mu : :Ms
+function cor(cdgrn::ContextDependentGRN, tfs::OmicsProfile, prof::OmicsProfile, context::BitVector; unspliced=true)
+    M = unspliced ? prof.Mu : prof.Ms
     cond = unspliced ? :context : :spliced
     df = DataFrame(tf=Symbol[], target=Symbol[], ρ=Float64[], condition=Symbol[])
     for targ in cdgrn.scores.target
         tf_set = cdgrn.tfs[targ]
-        y = vec(get_gene_expr(prof, string(targ), M))[context]
-        xs = map(tf -> vec(get_gene_expr(tfs, string(tf), :Ms)[context]), tf_set)
+        y = vec(M[string(targ), :])[context]
+        xs = map(tf -> vec(tfs.Ms[string(tf), :][context]), tf_set)
         ρs = cor(y, xs...)
         for (tf, ρ) in zip(tf_set, ρs)
             if unspliced || tf != targ
@@ -68,13 +68,13 @@ function cor(cdgrn::ContextDependentGRN, tfs::Profile, prof::Profile, context::B
     return df
 end
 
-function cor(cdgrn::ContextDependentGRN, tfs::Profile, prof::Profile; nsample=SnowyOwl.nobs(prof))
+function cor(cdgrn::ContextDependentGRN, tfs::OmicsProfile, prof::OmicsProfile; nsample=SnowyOwl.nobs(prof))
     df = DataFrame(tf=Symbol[], target=Symbol[], ρ=Float64[], condition=Symbol[])
     idx = (nsample == SnowyOwl.nobs(prof)) ? Colon() : StatsBase.sample(collect(1:SnowyOwl.nobs(prof)), nsample)
     for targ in cdgrn.scores.target
         tf_set = cdgrn.tfs[targ]
-        y = collect(vec(get_gene_expr(prof, string(targ), :Mu))[idx])
-        xs = map(tf -> collect(vec(get_gene_expr(tfs, string(tf), :Ms))[idx]), tf_set)
+        y = collect(vec(prof.Mu[string(targ), :])[idx])
+        xs = map(tf -> collect(vec(tfs.Ms[string(tf), :])[idx]), tf_set)
         ρs = cor(y, xs...)
         for (tf, ρ) in zip(tf_set, ρs)
             push!(df, (tf, targ, ρ, :global))
@@ -83,13 +83,13 @@ function cor(cdgrn::ContextDependentGRN, tfs::Profile, prof::Profile; nsample=Sn
     return df
 end
 
-function partial_corr(cdgrn::ContextDependentGRN, tfs::Profile, prof::Profile, context; unspliced=true)
-    M = unspliced ? :Mu : :Ms
+function partial_corr(cdgrn::ContextDependentGRN, tfs::OmicsProfile, prof::OmicsProfile, context; unspliced=true)
+    M = unspliced ? prof.Mu : prof.Ms
     df = DataFrame(tf=Symbol[], target=Symbol[], ρ=Float64[], dof=Int[])
     for targ in cdgrn.scores.target
         tf_set = cdgrn.tfs[targ]
-        y = vec(get_gene_expr(prof, string(targ), M))[context]
-        xs = map(tf -> vec(get_gene_expr(tfs, string(tf), :Ms)[context]), tf_set)
+        y = vec(M[string(targ), :])[context]
+        xs = map(tf -> vec(tfs.Ms[string(tf), :][context]), tf_set)
         ρs = partial_corr(y, xs...)
         dof = length(tf_set) - 1
         for (tf, ρ) in zip(tf_set, ρs)
@@ -102,12 +102,12 @@ function partial_corr(cdgrn::ContextDependentGRN, tfs::Profile, prof::Profile, c
     return df
 end
 
-function partial_corr(cdgrn::ContextDependentGRN, tfs::Profile, prof::Profile)
+function partial_corr(cdgrn::ContextDependentGRN, tfs::OmicsProfile, prof::OmicsProfile)
     df = DataFrame(tf=Symbol[], target=Symbol[], ρ=Float64[], dof=Int[])
     for targ in cdgrn.scores.target
         tf_set = cdgrn.tfs[targ]
-        y = collect(vec(get_gene_expr(prof, string(targ), :Mu)))
-        xs = map(tf -> collect(vec(get_gene_expr(tfs, string(tf), :Ms))), tf_set)
+        y = collect(vec(prof.Mu[string(targ), :]))
+        xs = map(tf -> collect(vec(tfs.Ms[string(tf), :])), tf_set)
         ρs = partial_corr(y, xs...)
         dof = length(tf_set) - 1
         for (tf, ρ) in zip(tf_set, ρs)
@@ -135,8 +135,8 @@ function train_cdgrns(tfs, prof, true_regulations, clusters, selected::AbstractV
         save_effective_gene_set(filename, context_cor, reg_strength)
 
         ## add gene expression
-        context_cor.tf_s = [mean(vec(get_gene_expr(tfs, String(g), :Ms))[cntx]) for g in context_cor.tf]
-        context_cor.target_u = [mean(vec(get_gene_expr(prof, String(g), :Mu))[cntx]) for g in context_cor.target]
+        context_cor.tf_s = [mean(vec(tfs.Ms[String(g), :])[cntx]) for g in context_cor.tf]
+        context_cor.target_u = [mean(vec(prof.Mu[String(g), :])[cntx]) for g in context_cor.target]
         cortable[i] = context_cor
         return_model && (cdgrns[i] = cdgrn)
     end

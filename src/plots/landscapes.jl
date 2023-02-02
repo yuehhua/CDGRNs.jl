@@ -1,4 +1,6 @@
-function likelihood_landscape(df::DataFrame, tf_name, gene_name, mix_logpdf;
+logpdf(model::GMR) = (x,y) -> logpdf(model.dist, [x,y])
+
+function likelihood_landscape(df::DataFrame, tf_name, gene_name, model::GMR;
         xlabel="log spliced RNA of TF gene, $(tf_name)",
         ylabel="log unspliced RNA of target gene, $(gene_name)",
         savepath::String=@__DIR__, title="likelihood_landscape", save=[:svg],
@@ -6,7 +8,8 @@ function likelihood_landscape(df::DataFrame, tf_name, gene_name, mix_logpdf;
     
     xmin, xmax = extrema(df.logX)
     ymin, ymax = extrema(df.logY)
-    p = contour!(xmin:0.01:xmax, ymin:0.01:ymax, mix_logpdf, seriescolor=:OrRd)
+    landscape = logpdf(model)
+    p = contour!(xmin:0.01:xmax, ymin:0.01:ymax, landscape, seriescolor=:OrRd)
     scatter!(df.logX, df.logY, xlabel=xlabel, ylabel=ylabel,
         markersize=2, markerstrokewidth=0, legends=false,
         thickness_scaling=2, widen=false, size=figsize, dpi=dpi
