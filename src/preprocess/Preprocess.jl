@@ -27,11 +27,11 @@ export
     regulation_correlation,
     remove_spurious_pairs,
 
-    # preprocess
+    # utils
     get_regulation_expr
 
 include("data.jl")
 include("pipeline.jl")
-include("preprocess.jl")
+include("utils.jl")
 
 end
