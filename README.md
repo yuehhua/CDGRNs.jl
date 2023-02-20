@@ -5,6 +5,8 @@
 [![Build Status](https://github.com/yuehhua/CDGRNs.jl/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/yuehhua/CDGRNs.jl/actions/workflows/test.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/yuehhua/CDGRNs.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/yuehhua/CDGRNs.jl)
 
+CDGRNs.jl provides implementation of Context-Dependent Gene Regulatory Networks (CDGRN) model in Julia. This package provides basic functionalities and examples are work in progress.
+
 
 ## Citation
 
