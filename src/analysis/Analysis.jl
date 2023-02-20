@@ -12,6 +12,7 @@ using GLM
 using Graphs
 using HypothesisTests
 using MultivariateStats
+using OmicsProfiles
 using SimpleWeightedGraphs
 using SnowyOwl
 using StatsBase
