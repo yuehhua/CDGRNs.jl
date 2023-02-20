@@ -13,7 +13,7 @@ function test_pmf(ρ1, ρ2, condition1, condition2, plot_dir::String=@__DIR__; �
         thickness_scaling=2, widen=false, size=figsize,
     )
 
-    savefig(p, joinpath(plot_dir, "histogram_$(title)"), save)
+    SnowyOwl.Plots.save(p, joinpath(plot_dir, "histogram_$(title)"), save)
 end
 
 function test_cdf(ρ1, ρ2, condition1, condition2, plot_dir::String=@__DIR__; step=0.1,
@@ -29,5 +29,5 @@ function test_cdf(ρ1, ρ2, condition1, condition2, plot_dir::String=@__DIR__; s
         thickness_scaling=2, widen=false, size=figsize,
     )
 
-    savefig(p, joinpath(plot_dir, "cdf_$(title)"), save)
+    SnowyOwl.Plots.save(p, joinpath(plot_dir, "cdf_$(title)"), save)
 end

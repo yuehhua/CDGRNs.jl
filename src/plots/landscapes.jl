@@ -5,7 +5,7 @@ function likelihood_landscape(df::DataFrame, tf_name, gene_name, model::GMR;
         ylabel="log unspliced RNA of target gene, $(gene_name)",
         savepath::String=@__DIR__, title="likelihood_landscape", save=[:svg],
         figsize=(800, 600), dpi=300)
-    
+
     xmin, xmax = extrema(df.logX)
     ymin, ymax = extrema(df.logY)
     landscape = logpdf(model)
@@ -14,7 +14,7 @@ function likelihood_landscape(df::DataFrame, tf_name, gene_name, model::GMR;
         markersize=2, markerstrokewidth=0, legends=false,
         thickness_scaling=2, widen=false, size=figsize, dpi=dpi
     )
-    savefig(p, joinpath(savepath, "$(title)_$(tf_name)-$(gene_name)"), save)
+    SnowyOwl.Plots.save(p, joinpath(savepath, "$(title)_$(tf_name)-$(gene_name)"), save)
     return p
 end
 
@@ -23,11 +23,11 @@ function cluster_landscape(df::DataFrame, tf_name, gene_name, clst;
         ylabel="log unspliced RNA of target gene, $(gene_name)",
         savepath::String=@__DIR__, title="cluster_landscape", save=[:svg],
         figsize=(800, 600), dpi=300)
-    
+
     p = scatter(df.logX, df.logY, color=clst, xlabel=xlabel, ylabel=ylabel,
         markersize=2, markerstrokewidth=0,
         thickness_scaling=2, widen=false, size=figsize, dpi=dpi
     )
-    savefig(p, joinpath(savepath, "$(title)_$(tf_name)-$(gene_name)"), save)
+    SnowyOwl.Plots.save(p, joinpath(savepath, "$(title)_$(tf_name)-$(gene_name)"), save)
     return p
 end
