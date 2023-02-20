@@ -1,7 +1,7 @@
 name = "CDGRNs"
 uuid = "b97acbd9-7fbb-4cbc-bc29-58677f11bc5c"
 authors = ["Yueh-Hua Tu <a504082002@gmail.com>"]
-version = "0.0.1"
+version = "0.0.2"
 
 [deps]
 AxisArrays = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
@@ -36,6 +36,7 @@ Colors = "0.12"
 DataFrames = "1"
 Distances = "0.10"
 FileIO = "1"
+GLM = "1"
 GaussianMixtureRegressions = "0.0"
 Graphs = "1"
 HypothesisTests = "0.10"
