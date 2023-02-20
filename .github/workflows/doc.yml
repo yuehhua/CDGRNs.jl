@@ -32,7 +32,7 @@ jobs:
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
       - run: |
           julia --project=docs -e '
-            using Documenter: DocMeta, doctest
-            using CDGRNs
-            DocMeta.setdocmeta!(CDGRNs, :DocTestSetup, :(using CDGRNs); recursive=true)
-            doctest(CDGRNs)'
+            using Pkg
+            Pkg.develop(PackageSpec(path=pwd()))
+            Pkg.instantiate()
+            include("docs/make.jl");'
